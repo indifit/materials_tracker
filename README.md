@@ -1,4 +1,4 @@
-# project_tracker
+# materials_tracker
 Source code repository for the LDC Project tracker GS source code
 
 # Important Note
