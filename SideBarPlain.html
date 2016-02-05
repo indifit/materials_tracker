@@ -1,0 +1,45 @@
+﻿<script>
+    // client side return funtion handler when "Update Message" button is clicked in the side bar
+    // input parameter "obj" is the retVal object returned by the server side emailUpdater function
+    function updateEmail(obj) {
+        emailForm.subject.value = 'RBC NEA ' + obj[0] + ' Purchase Order';
+        emailForm.msg.value = 'Dear ' + obj[1] + ',\n\n'
+        + 'Please find attached our purchase order ' + obj[0] + ', with a total value of GBP ' + obj[2] + ' excl. VAT.'
+        + '\nPlease note that delivery is requested ' + obj[3] + ' ' + obj[4] + '.'
+        + '\n\nIf there are any problems with this order, please use the contact details below.'
+        + '\n\nYours sincerely,\n\n' + obj[5]
+        + '\nRBC NEA Purchasing'
+        + '\nTel: ' + obj[6]
+        + '\nEmail: ' + obj[7]
+        ;
+    }
+
+</script>
+
+<hr> <!-- A horizontal line for separation -->
+
+<form id="poItemsForm">
+    <!-- The email form content of the side bar -->
+
+    <font face="arial"><b>Purchase Order Options</b></font><br><br>
+
+    <input type="checkbox" name="sameDept" value="true"> <font face="arial"> Limit to items requested by this team</font>
+    <br><br>
+    <input type="radio" name="delivery" value="BY:" checked> <font face="arial"> Delivery BY Requested Date</font><br>
+    <input type="radio" name="delivery" value="ON:"> <font face="arial"> Delivery ON Requested Date</font><br>
+    <br>
+
+    <!-- The button to generate a PO / PR based on the currently selected cell -->
+    <input type="button" value="Create BPR" onclick="google.script.run.generatePO(this.parentNode)" />
+
+</form>
+
+<hr> <!-- A horizontal line for separation -->
+<!--
+Delivery windows
+
+Budget breakdown by lines / % as well as value
+
+View options to hide columns when needed
+
+-->
