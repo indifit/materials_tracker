@@ -1,23 +1,25 @@
 ﻿var UI = null;
 
-function onOpen(e) {
-    UI = SpreadsheetApp.getUi();
+module Code 
+{
+    function onOpen(e) {
+        UI = SpreadsheetApp.getUi();
 
-    var statusUpdateSubMenu =
-        UI.createMenu('Update Order Status')
-            .addItem('...to Sent', 'updateStatustoSent')
+        var statusUpdateSubMenu =
+            UI.createMenu('Update Order Status')
+                .addItem('...to Sent', 'updateStatustoSent')
 
-  UI.createMenu('Purchasing Tools')
-        .addItem('Show Purchasing Sidebar', 'purchasingSidebar')
-        .addSeparator()
-        .addSubMenu(statusUpdateSubMenu)
-        .addSeparator()
-        .addItem('Clean Up Formats, Formulae and Drop-downs', 'matCleanup')
-        .addToUi();
-    setupCLPicker();
-    setupGoodsReceiver();
-    matDropDowns();
-}
+        UI.createMenu('Purchasing Tools')
+            .addItem('Show Purchasing Sidebar', 'purchasingSidebar')
+            .addSeparator()
+            .addSubMenu(statusUpdateSubMenu)
+            .addSeparator()
+            .addItem('Clean Up Formats, Formulae and Drop-downs', 'matCleanup')
+            .addToUi();
+        setupCLPicker();
+        setupGoodsReceiver();
+        matDropDowns();
+    }
 
 /*
 * Settings for the purchasing side bar
@@ -69,12 +71,4 @@ function edited(e) {
     }
 
 } // end fn:onEdit
-
-
-
-
-
-
-
-
-
+}

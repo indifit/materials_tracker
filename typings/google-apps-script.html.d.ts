@@ -29,14 +29,14 @@ declare module GoogleAppsScript {
       getAs(contentType: string): Base.Blob;
       getBlob(): Base.Blob;
       getContent(): string;
-      getHeight(): Integer;
+      getHeight(): number;
       getTitle(): string;
-      getWidth(): Integer;
+      getWidth(): number;
       setContent(content: string): HtmlOutput;
-      setHeight(height: Integer): HtmlOutput;
+      setHeight(height: number): HtmlOutput;
       setSandboxMode(mode: SandboxMode): HtmlOutput;
       setTitle(title: string): HtmlOutput;
-      setWidth(width: Integer): HtmlOutput;
+      setWidth(width: number): HtmlOutput;
     }
 
     /**
@@ -47,7 +47,7 @@ declare module GoogleAppsScript {
      *  HtmlOutput for what limitations this implies on what can be returned.
      */
     export interface HtmlService {
-      SandboxMode: SandboxMode
+      SandboxMode: SandboxMode;
       createHtmlOutput(): HtmlOutput;
       createHtmlOutput(blob: Base.BlobSource): HtmlOutput;
       createHtmlOutput(html: string): HtmlOutput;
