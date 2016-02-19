@@ -1,20 +1,21 @@
-﻿var PR_3_and_4;
-(function (PR_3_and_4) {
+﻿module PR_3_and_4 {
     /* * * * * * *
     * STAGE 3 of PR Generation Materials - create the PR
-    *
+    *  
     * * * * * * */
+
     function PRs3_createPR() {
+
         var prMain = 'Import';
         var prMain_StartRow = 2;
 
         var newPRNumber = nextPOPRNumber();
         var newPRName = PROJ_NAME() + ' (' + PROJ_NUMBER() + ') BPR ' + newPRNumber;
-        if (isEmergency) {
-            newPRName += ' Emergency Order ' + branchPONumber;
-        }
+        if (isEmergency) { newPRName += ' Emergency Order ' + branchPONumber; }
 
-        var newPRFile = DriveApp.getFileById('1IbNvwMtwtwhje0_quRBEPeHdx7ohDLJ7NhOLZavww64').makeCopy(newPRName, DriveApp.getFolderById(PR_FOLDER_ID()));
+        var newPRFile = DriveApp.getFileById('1IbNvwMtwtwhje0_quRBEPeHdx7ohDLJ7NhOLZavww64')
+            .makeCopy(newPRName,
+            DriveApp.getFolderById(PR_FOLDER_ID()));
 
         newPRFile.setOwner(DRIVE_OWNER());
 
@@ -28,9 +29,7 @@
 
         // cap the number of line items to the PR Items limit
         var li = iIndices.length;
-        if (li > PR_ITEMS_LIMIT) {
-            li = PR_ITEMS_LIMIT;
-        }
+        if (li > PR_ITEMS_LIMIT) { li = PR_ITEMS_LIMIT; }
 
         // write the retVal value, but add the indices that this PR refers to
         var retVal = { Num: newPRNumber, Url: newPRUrl, ID: newPRID, Name: newPRName, Indices: iIndices.slice(0, li) };
@@ -43,13 +42,13 @@
         var daysToDelivery = dateDiffInDays(poDelivery, new Date());
 
         var bprPriority = 0;
-        if (daysToDelivery < 8) {
-            bprPriority = 1;
-        }
+        if (daysToDelivery < 8) { bprPriority = 1; }
 
+        // fill the main PR page with line items - use shift to start from the top of the list
+        // [row][column] but zero indexed not 1 (therefore -1)
         for (var i = 0; i < li; i++) {
-            var thisIC = iCode.shift();
-            mainPRValues[i][0] = thisIC;
+            var thisIC = iCode.shift()
+    mainPRValues[i][0] = thisIC;
             mainPRValues[i][1] = iDesc.shift();
             mainPRValues[i][2] = iQty.shift();
             mainPRValues[i][3] = iUoM.shift();
@@ -84,11 +83,13 @@
         SpreadsheetApp.setActiveSpreadsheet(SS);
         SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(SH).setActiveSelection(thisCell);
 
-        // return the details of the new PR to the main script
+        // return the details of the new PR to the main script  
         return retVal;
-    }
+
+    } // enf fn:PRs3_createPR
 
     function PRs4_updateMaterialsList(PRs3) {
+
         // import the three columns that need updating
         var statusCol = SH.getRange(1, (wholeList[MHRI].indexOf(H_STATUS) + 1), SH.getLastRow(), 1);
         var poNumCol = SH.getRange((MHRI + 2), (wholeList[MHRI].indexOf(H_PONUM) + 1), SH.getLastRow(), 1);
@@ -102,6 +103,7 @@
 
         SS.toast("PR " + PRs3.Num + " created, adding links to materials list", "Step 5 of 5", 60);
 
+        // remove the referecnes for the old file for regenerated items
         while (aRegenIndices.length) {
             var r = aRegenIndices.pop();
             statusValues[r][0] = '';
@@ -111,20 +113,19 @@
 
         // cap the number of line items to the PR Items limit
         var li = iIndices.length;
-        if (li > PR_ITEMS_LIMIT) {
-            li = PR_ITEMS_LIMIT;
-        }
+        if (li > PR_ITEMS_LIMIT) { li = PR_ITEMS_LIMIT; }
 
         var _status = null;
         var _statusArray = getCentralDropDowns().ddStatusBPR;
         for (; _statusArray.length > 0;) {
             // get the status dropdown value whose prefix matches the regen prefix
-            if (_statusArray[0].substr(0, 1) == REGEN_PREFIX) {
-                _status = _statusArray[0];
-            }
+            if (_statusArray[0].substr(0, 1) == REGEN_PREFIX) { _status = _statusArray[0]; }
             _statusArray.shift();
         }
 
+        // enter the values for the newly created file into the correct rows.
+        // - use shift to start from the top of the list
+        // [row][column] but zero indexed not 1 (therefore -1)
         for (var i = 0; i < li; i++) {
             var j = iIndices.shift();
             statusValues[j][0] = _status;
@@ -137,6 +138,5 @@
         poCreatedCol.setValues(poCreatedValues);
 
         return true;
-    }
-})(PR_3_and_4 || (PR_3_and_4 = {}));
-//# sourceMappingURL=PR 3 and 4.js.map
+    }    
+}
