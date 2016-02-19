@@ -2,8 +2,8 @@
 var SS = SpreadsheetApp.getActiveSpreadsheet();
 var SH = SS.getActiveSheet();
 var thisCell;
-var UI = null;
 
+//var UI = null; // this is written in the opened and edited functions as timed functions throw an exception
 /* Drive Owner User ID */
 function DRIVE_OWNER() {
     return getCentralDropDowns().DRIVE_OWNER[0][0];

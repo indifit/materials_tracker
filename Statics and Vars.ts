@@ -3,7 +3,7 @@
 var SS = SpreadsheetApp.getActiveSpreadsheet();
 var SH = SS.getActiveSheet();
 var thisCell: GoogleAppsScript.Spreadsheet.Range;
-var UI = null; // this is written in the opened and edited functions as timed functions throw an exception
+//var UI = null; // this is written in the opened and edited functions as timed functions throw an exception
 
 /* Drive Owner User ID */
 function DRIVE_OWNER() {
