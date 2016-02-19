@@ -5,80 +5,85 @@
 
 function PRs3_createPR() {
 
-    var prProjectNameCell = 'C2';
-    var prPRNumberCell = 'K1';
-    var prProjectNumberCell = 'K2';
-    var emergencyHeaderCell = 'D1';
+  var prMain = 'Import';
+  var prMain_StartRow = 2;
+  
+  var newPRNumber = nextPOPRNumber();
+  var newPRName = PROJ_NAME() +' ('+ PROJ_NUMBER() +') BPR '+ newPRNumber;
+  if (isEmergency){newPRName += ' Emergency Order '+branchPONumber;}
+  
+  var newPRFile = DriveApp.getFileById('1IbNvwMtwtwhje0_quRBEPeHdx7ohDLJ7NhOLZavww64')
+                         .makeCopy(newPRName,
+                                   DriveApp.getFolderById(PR_FOLDER_ID()));
+  
+  newPRFile.setOwner(DRIVE_OWNER());
 
-    var prMain = 'To be completed';
-    var prMain_StartRow = 4;
+  var newPRUrl = newPRFile.getUrl();
+    
+  var newPRID = newPRUrl.substring(newPRUrl.indexOf('/d/')+3,newPRUrl.indexOf('/edit'));
 
-    var newPRNumber = nextPOPRNumber();
-    var newPRName = PROJ_NAME() + ' (' + PROJ_NUMBER() + ') BPR ' + newPRNumber;
-    if (isEmergency) { newPRName += ' Emergency Order ' + branchPONumber; }
+  SpreadsheetApp.setActiveSpreadsheet(SpreadsheetApp.openById(newPRID));
+  var PR = SpreadsheetApp.getActiveSpreadsheet();
+  var PRsh = PR.setActiveSheet(PR.getSheetByName(prMain));
+  
+  // cap the number of line items to the PR Items limit
+  var li = iIndices.length;
+  if (li>PR_ITEMS_LIMIT){li=PR_ITEMS_LIMIT;}
+  
+  // write the retVal value, but add the indices that this PR refers to
+  var retVal = {Num:newPRNumber, Url:newPRUrl, ID:newPRID, Name:newPRName, Indices:iIndices.slice(0,li)};
+  
+  // get the body area of the PR page
+  var mainPRRange = PRsh.getRange(prMain_StartRow, 1, li, 27);
+  var mainPRValues = mainPRRange.getValues();
+  
+  // get the number of days between today and the delivery date
+  var daysToDelivery = dateDiffInDays(poDelivery, new Date()); 
 
-    var newPRFile = DriveApp.getFileById(PR_TEMPLATE_ID())
-        .makeCopy(newPRName,
-        DriveApp.getFolderById(PR_FOLDER_ID()));
-
-    newPRFile.setOwner(DRIVE_OWNER());
-
-    var newPRUrl = newPRFile.getUrl();
-
-    var newPRID = newPRUrl.substring(newPRUrl.indexOf('/d/') + 3, newPRUrl.indexOf('/edit'));
-
-    SpreadsheetApp.setActiveSpreadsheet(SpreadsheetApp.openById(newPRID));
-    var PR = SpreadsheetApp.getActiveSpreadsheet();
-    var PRsh = PR.setActiveSheet(PR.getSheetByName(prMain));
-
-    // write the single values to the new PR
-    if (isEmergency) { PR.getRange(emergencyHeaderCell).setValue('Emergency Order ' + branchPONumber); }
-    PR.getRange(prProjectNameCell).setValue(PROJ_NAME());
-    PR.getRange(prProjectNumberCell).setValue(PROJ_NUMBER());
-    PR.getRange(prPRNumberCell).setValue(newPRNumber);
-
-    // cap the number of line items to the PR Items limit
-    var li = iIndices.length;
-    if (li > PR_ITEMS_LIMIT) { li = PR_ITEMS_LIMIT; }
-
-    // write the retVal value, but add the indices that this PR refers to
-    var retVal = { Num: newPRNumber, Url: newPRUrl, ID: newPRID, Name: newPRName, Indices: iIndices.slice(0, li) };
-
-    // get the body area of the PR page
-    var mainPRRange = PRsh.getRange(prMain_StartRow, 1, li, 11);
-    var mainPRValues = mainPRRange.getValues();
-
-    // get the number of days between today and the delivery date
-    var daysToDelivery = dateDiffInDays(poDelivery, new Date());
-
-    var bprPriority = 'N';
-    if (daysToDelivery < 8) { bprPriority = 'Y'; }
-
-    // fill the main PR page with line items - use shift to start from the top of the list
-    // [row][column] but zero indexed not 1 (therefore -1)
-    for (var i = 0; i < li; i++) {
-        var thisIC = iCode.shift()
+  var bprPriority = 0;
+  if (daysToDelivery<8){bprPriority = 1;}
+  
+  // fill the main PR page with line items - use shift to start from the top of the list
+  // [row][column] but zero indexed not 1 (therefore -1)
+  for(var i=0;i<li;i++) {
+    var thisIC = iCode.shift()
     mainPRValues[i][0] = thisIC;
-        mainPRValues[i][1] = iDesc.shift();
-        mainPRValues[i][2] = iUnit.shift();
-        mainPRValues[i][3] = iUoM.shift();
-        mainPRValues[i][4] = iFactor.shift();
-        mainPRValues[i][5] = iBUoM.shift();
-        mainPRValues[i][6] = iQty.shift();
-        mainPRValues[i][7] = iPDC.shift();
-        mainPRValues[i][8] = poDelivery;
-        mainPRValues[i][9] = bprPriority;
-        mainPRValues[i][10] = iNote.shift();
-    }
+    mainPRValues[i][1] = iDesc.shift();
+    mainPRValues[i][2] = iQty.shift();
+    mainPRValues[i][3] = iUoM.shift();
+    mainPRValues[i][4] = iFactor.shift();
+    mainPRValues[i][5] = iBUoM.shift();    
+    mainPRValues[i][6] = iUnit.shift();
+    mainPRValues[i][7] = poDelivery;
+    mainPRValues[i][8] = bprPriority;
+    mainPRValues[i][9] = ''; // site
+    mainPRValues[i][10] = ''; // fill from
+    mainPRValues[i][11] = ''; // internal receiving point
+    mainPRValues[i][12] = ''; // account number
+    mainPRValues[i][13] = ''; // cost centre
+    mainPRValues[i][14] = ''; // sub account
+    mainPRValues[i][15] = ''; // customer code
+    mainPRValues[i][16] = ''; // customer type
+    mainPRValues[i][17] = ''; // asset number
+    mainPRValues[i][18] = ''; // job number
+    mainPRValues[i][19] = PROJ_NUMBER();
+    mainPRValues[i][20] = iPDC.shift();
+    mainPRValues[i][21] = ''; // supplier code
+    mainPRValues[i][22] = ''; // notes to supplier
+    mainPRValues[i][23] = iNote.shift();
+    mainPRValues[i][24] = ''; // reimbursement customer code
+    mainPRValues[i][25] = ''; // reimbursement customer type
+    mainPRValues[i][26] = ''; // catalog number
+  }
+  
+  mainPRRange.setValues(mainPRValues);
 
-    mainPRRange.setValues(mainPRValues);
-
-    // return to original sheet
-    SpreadsheetApp.setActiveSpreadsheet(SS);
-    SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(SH).setActiveSelection(thisCell);
-
-    // return the details of the new PR to the main script  
-    return retVal;
+  // return to original sheet
+  SpreadsheetApp.setActiveSpreadsheet(SS);
+  SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(SH).setActiveSelection(thisCell);
+  
+  // return the details of the new PR to the main script  
+  return retVal;
 
 } // enf fn:PRs3_createPR
 
