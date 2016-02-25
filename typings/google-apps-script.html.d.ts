@@ -34,7 +34,7 @@ declare module GoogleAppsScript {
       getWidth(): number;
       setContent(content: string): HtmlOutput;
       setHeight(height: number): HtmlOutput;
-      setSandboxMode(mode: SandboxMode): HtmlOutput;
+      setSandboxMode(mode: HTML.ISandboxModeType): HtmlOutput;
       setTitle(title: string): HtmlOutput;
       setWidth(width: number): HtmlOutput;
     }
@@ -47,7 +47,7 @@ declare module GoogleAppsScript {
      *  HtmlOutput for what limitations this implies on what can be returned.
      */
     export interface HtmlService {
-      SandboxMode: SandboxMode;
+      SandboxMode: HTML.SandboxMode;
       createHtmlOutput(): HtmlOutput;
       createHtmlOutput(blob: Base.BlobSource): HtmlOutput;
       createHtmlOutput(html: string): HtmlOutput;
@@ -62,12 +62,14 @@ declare module GoogleAppsScript {
      * A template object for dynamically constructing HTML. For more information, see the
      *  guide to templates.
      */
-    export interface HtmlTemplate {
-      evaluate(): HtmlOutput;
-      getCode(): string;
-      getCodeWithComments(): string;
-      getRawContent(): string;
-    }
+      export interface HtmlTemplate
+      {
+          data: any;
+          evaluate(): HtmlOutput;
+          getCode(): string;
+          getCodeWithComments(): string;
+          getRawContent(): string;
+      }
 
     /**
      * An enum representing the sandbox modes that can be used for client-side HtmlService
@@ -100,7 +102,6 @@ declare module GoogleAppsScript {
      *        alert(google.script.sandbox.mode);
      *      </script>
      */
-    export enum SandboxMode { EMULATED, IFRAME, NATIVE }
   }
 }
 
