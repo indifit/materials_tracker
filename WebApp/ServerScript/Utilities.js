@@ -13,7 +13,9 @@
                         rowVals = vals[i];
                         var keyColVal = rowVals[keyColIndex];
 
-                        if (keyColVal.toString().toLowerCase() === lookupVal.toLowerCase()) {
+                        Logger.log('keyColVal = ' + rowVals[keyColIndex]);
+
+                        if (typeof keyColVal != "undefined" && keyColVal.toString().toLowerCase() === lookupVal.toLowerCase()) {
                             return rowVals;
                         }
                     }

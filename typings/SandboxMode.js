@@ -1,5 +1,6 @@
 var GoogleAppsScript;
 (function (GoogleAppsScript) {
+    // ReSharper disable once InconsistentNaming
     (function (HTML) {
         var SandboxMode = (function () {
             function SandboxMode() {

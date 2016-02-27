@@ -1,3 +1,4 @@
+// ReSharper disable once InconsistentNaming
 module GoogleAppsScript.HTML
 {
     export interface ISandboxModeType
@@ -6,8 +7,8 @@ module GoogleAppsScript.HTML
 
     export class SandboxMode
     {        
-        EMULATED: ISandboxModeType; 
-        IFRAME: ISandboxModeType;
-        NATIVE: ISandboxModeType;
+        static EMULATED: ISandboxModeType; 
+        static IFRAME: ISandboxModeType;
+        static NATIVE: ISandboxModeType;
     }
 }

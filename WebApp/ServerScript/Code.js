@@ -35,10 +35,29 @@ var hash;
 function doGet(request) {
     hash = request.parameter['projHash'];
 
-    var t = HtmlService.createTemplateFromFile('Hash');
+    if (typeof hash == "undefined") {
+        return HtmlService.createTemplateFromFile('InvalidProjectPage').evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
+    }
 
-    t.data = hash;
+    //Lokup the hash
+    var projectLookupSsid = jw.MaterialsTracker.Config.ConfigurationManager.getSetting(jw.MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
 
-    return t.evaluate().setSandboxMode(HtmlService.SandboxMode.IFRAME);
+    var projectLookupSs = SpreadsheetApp.openById(projectLookupSsid);
+
+    var sheet = projectLookupSs.getSheets()[0];
+
+    var range = sheet.getRange(2, 1, 100, 2);
+
+    var matchingRow = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(range, hash);
+
+    if (matchingRow.length === 0) {
+        return HtmlService.createTemplateFromFile('InvalidProjectPage').evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
+    }
+
+    var template = HtmlService.createTemplateFromFile('Index');
+
+    template.data = {};
+
+    return template.evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
 }
 //# sourceMappingURL=Code.js.map

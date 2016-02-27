@@ -32,9 +32,33 @@ function doGet(request: GoogleAppsScript.Script.IParameters)
 {
     hash = request.parameter['projHash'];
 
-    var t: GoogleAppsScript.HTML.HtmlTemplate = HtmlService.createTemplateFromFile('Hash');
+    if (typeof hash == "undefined")
+    {        
 
-    t.data = hash;    
+        return HtmlService.createTemplateFromFile('InvalidProjectPage').evaluate()
+            .setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
+    }
 
-    return t.evaluate().setSandboxMode(HtmlService.SandboxMode.IFRAME);
+    //Lokup the hash
+    var projectLookupSsid: string = jw.MaterialsTracker.Config.ConfigurationManager.getSetting(jw.MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
+
+    var projectLookupSs: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(projectLookupSsid);
+
+    var sheet: GoogleAppsScript.Spreadsheet.Sheet = projectLookupSs.getSheets()[0];
+
+    var range: GoogleAppsScript.Spreadsheet.Range = sheet.getRange(2, 1, 100, 2);
+
+    var matchingRow: Object[] = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(range, hash);
+
+    if (matchingRow.length === 0)
+    {
+        return HtmlService.createTemplateFromFile('InvalidProjectPage').evaluate()
+            .setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
+    }
+
+    var template = HtmlService.createTemplateFromFile('Index');
+
+    template.data = {};
+
+    return template.evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
 }
