@@ -50,7 +50,7 @@ function doGet(request) {
 
     var matchingRow = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(range, hash);
 
-    if (matchingRow.length === 0) {
+    if (matchingRow == null) {
         return HtmlService.createTemplateFromFile('InvalidProjectPage').evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
     }
 

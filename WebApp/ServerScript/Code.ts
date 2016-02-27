@@ -48,9 +48,9 @@ function doGet(request: GoogleAppsScript.Script.IParameters)
 
     var range: GoogleAppsScript.Spreadsheet.Range = sheet.getRange(2, 1, 100, 2);
 
-    var matchingRow: Object[] = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(range, hash);
+    var matchingRow: Object[] = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(range, hash);    
 
-    if (matchingRow.length === 0)
+    if (matchingRow == null)
     {
         return HtmlService.createTemplateFromFile('InvalidProjectPage').evaluate()
             .setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);

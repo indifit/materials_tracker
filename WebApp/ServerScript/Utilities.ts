@@ -22,7 +22,7 @@
                     return rowVals;
                 }
             }
-            return rowVals;
+            return null;
         };        
     }   
 }
