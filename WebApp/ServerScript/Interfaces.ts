@@ -7,7 +7,15 @@
      */
     export interface IProjectHashLookupResponse {
         projectNumber: number;
+        projectName: string;
+        kingdomHallAddress?: string;
         urlHash: string;
+    }
+
+    export interface IPage
+    {
+        templateName: string;
+        data: Object;
     }
 } 
 

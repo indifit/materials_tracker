@@ -1,63 +1,32 @@
-﻿var jw;
-(function (jw) {
-    (function (MaterialsTracker) {
-        var Server = (function () {
-            function Server() {
-                this.lookupProjectFromHash = function (hash) {
-                    var hashLookupSsid = jw.MaterialsTracker.Config.ConfigurationManager.getSetting(jw.MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
-
-                    //Open the spreadsheet using the ssid
-                    var hashLookupSs = SpreadsheetApp.openById(hashLookupSsid);
-
-                    var sheet = hashLookupSs.getSheets()[0];
-
-                    var range = sheet.getRange(2, 1, 100, 2);
-
-                    var projHash = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(range, hash);
-
-                    var response = {
-                        projectNumber: parseInt(projHash[1].toString()),
-                        urlHash: projHash[0].toString()
-                    };
-
-                    return response;
-                };
-            }
-            return Server;
-        })();
-        MaterialsTracker.Server = Server;
-    })(jw.MaterialsTracker || (jw.MaterialsTracker = {}));
-    var MaterialsTracker = jw.MaterialsTracker;
-})(jw || (jw = {}));
-
-var hash;
+﻿var hash;
 
 function doGet(request) {
-    hash = request.parameter['projHash'];
+    var pageSelector = new jw.MaterialsTracker.Utilities.PageSelector(request);
 
-    if (typeof hash == "undefined") {
-        return HtmlService.createTemplateFromFile('InvalidProjectPage').evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
-    }
+    var page = pageSelector.getPage();
 
-    //Lokup the hash
-    var projectLookupSsid = jw.MaterialsTracker.Config.ConfigurationManager.getSetting(jw.MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
+    var template = HtmlService.createTemplateFromFile(page.templateName);
 
-    var projectLookupSs = SpreadsheetApp.openById(projectLookupSsid);
-
-    var sheet = projectLookupSs.getSheets()[0];
-
-    var range = sheet.getRange(2, 1, 100, 2);
-
-    var matchingRow = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(range, hash);
-
-    if (matchingRow == null) {
-        return HtmlService.createTemplateFromFile('InvalidProjectPage').evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
-    }
-
-    var template = HtmlService.createTemplateFromFile('Index');
-
-    template.data = {};
+    template.data = page.data;
 
     return template.evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
+}
+
+function getCoreListData() {
+    var centralPurchasingSSID = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('CentralPurchasingSSID');
+
+    var centralPurchasingSS = SpreadsheetApp.openById(centralPurchasingSSID);
+
+    var coreListSheet = centralPurchasingSS.getSheetByName('CoreList');
+
+    var lastRow = coreListSheet.getLastRow();
+
+    var coreListRange = coreListSheet.getRange('A1:T' + lastRow);
+
+    var rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(coreListRange);
+
+    var coreListData = rangeUtils.convertToObjectArray();
+
+    return coreListData;
 }
 //# sourceMappingURL=Code.js.map

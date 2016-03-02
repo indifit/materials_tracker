@@ -6,22 +6,67 @@
 
 </head>
 <body>
-    <nav class="navbar navbar-default navbar-fixed-top">
-        <div class="container">
-            <div class="row">
-                <div class="col-xs-4"><h3 class="navbar-brand">Materials Tracker</h3>
-                </div>
-                <div class="col-xs-8">&nbsp;</div>
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-4">
+                <h3 class="navbar-brand">Materials Tracker</h3>
             </div>
-        </div>
-    </nav>
-<div class="container main-content">
-    <div class="row">
-        <div class="col-xs-12">
-            <h3>Index page</h3>
+            <div class="col-xs-8">&nbsp;</div>
         </div>
     </div>
-</div>    
+</nav>
+<div class="container main-content">
+    <div class="row">
+        <div class="col-xs-4">
+            <h3>Project Number:</h3>
+        </div>
+        <div class="col-xs-8">
+            <h3>
+                <?=data.projectData.projectNumber?>
+
+            </h3>
+        </div>
+        <div class="col-xs-4">
+            <h3>Project Name: </h3>
+        </div>
+        <div class="col-xs-8">
+            <h3>
+                <?=data.projectData.projectName?>
+
+            </h3>
+        </div>
+        <?if( typeof data.kingdomHallAddress != 'undefined'){?>
+
+        <div class="col-xs-4">
+            <h3>Kingdom Hall Address:</h3>
+        </div>
+        <div class="col-xs-8">
+            <h3>
+                <?=data.projectData.kingdomHallAddress?>
+
+            </h3>
+        </div>
+        <?}?>
+
+        <div class="col-xs-12">
+            <h3>Core List</h3>
+        </div>
+    </div>
+</div>
 </body>
 </html>
-<?!=HtmlService.createHtmlOutputFromFile('JavaScript').getContent(); ?>
+<?!=HtmlService.createHtmlOutputFromFile('JavaScript').getContent();?>
+
+<script language="javascript" type="text/javascript">
+    function loadData(data)
+    {
+        console.log(data);
+    }
+
+    $(function () {
+        console.log('CoreList data coming...');
+
+        google.script.run.withSuccessHandler(loadData).getCoreListData();                
+    });
+</script>
