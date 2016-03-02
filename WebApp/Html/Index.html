@@ -52,8 +52,63 @@
         <div class="col-xs-12">
             <h3>Core List</h3>
 
-            <div data-bind="foreach: items">
-                <span data-bind="text: itemDescription"></span>
+            <div class="long-list-wrapper">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>
+                            Item Code
+                        </th>
+                        <th>
+                            Item Description
+                        </th>
+                        <th>
+                            Manufacturer
+                        </th>
+                        <th>
+                            Brand
+                        </th>
+                        <th>
+                            Part Number
+                        </th>
+                        <th>
+                            Purchase UoM
+                        </th>
+                        <th>
+                            Factor
+                        </th>
+                        <th>
+                            Base UoM
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody data-bind="foreach: items">
+                    <tr>
+                        <td data-bind="text: itemCode"></td>
+                        <td data-bind="text: itemDescription"></td>
+                        <td data-bind="text: manufacturer"></td>
+                        <td data-bind="text: brand"></td>
+                        <td data-bind="text: partNumber"></td>
+                        <td data-bind="text: purchaseUOM"></td>
+                        <td data-bind="text: factor"></td>
+                        <td data-bind="text: baseUOM"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="form-inline" data-bind="visible: typeof selectedTrade() != 'undefined'">
+                <div class="form-group">
+                    <label class="form-control-static">Filters</label>
+                </div>
+                <div class="form-group">
+                    <label for="trades">Trade:</label>
+                    <select class="form-control" id="trades" data-bind="options: trades, value: selectedTrade"></select>
+                </div>
+                <div class="form-group">
+                    <label>Selected Trade:</label>
+                    <p class="form-control-static" data-bind="text: selectedTrade"></p>
+                </div>
             </div>
         </div>
     </div>
@@ -63,24 +118,30 @@
 <?!=HtmlService.createHtmlOutputFromFile('JavaScript').getContent();?>
 
 <script language="javascript" type="text/javascript">
+    var model;
+
     function loadData(data)
     {
-        var coreItems = ko.observableArray();
+        model.items(data.coreListData);     
 
-        for (var i = 0; i < data.length; i++)
-        {
-            coreItems.push(ko.mapping.fromJS(data[i]));
-        }        
+        model.trades(data.trades);
 
-        var model = { items: coreItems };
-
-        ko.applyBindings(model);
-
-        console.log('Done');
-    }
+        toastr.clear();
+    }    
 
     $(function () {
         console.log('CoreList data coming...');
+
+        model = {
+            items: ko.observableArray(),
+            selectedItems: ko.observableArray(),
+            trades: ko.observableArray(),
+            selectedTrade: ko.observable('')
+        };
+
+        ko.applyBindings(model);
+
+        toastr.info('Please wait while Core List items load', 'Loading...', { timeOut: 0, tapToDismiss: false, positionClass: 'toast-bottom-full-width' });
 
         google.script.run.withSuccessHandler(loadData).getCoreListData();                
     });

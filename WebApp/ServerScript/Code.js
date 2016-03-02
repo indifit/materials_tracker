@@ -27,6 +27,17 @@ function getCoreListData() {
 
     var coreListData = rangeUtils.convertToObjectArray();
 
-    return coreListData;
+    var processedTrades = [];
+
+    coreListData.forEach(function (value, index, arr) {
+        if (processedTrades.indexOf(value.trade.toString().trim()) === -1) {
+            processedTrades.push(value.trade.toString().trim());
+        }
+    });
+
+    return {
+        coreListData: coreListData,
+        trades: processedTrades
+    };
 }
 //# sourceMappingURL=Code.js.map

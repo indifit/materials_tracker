@@ -13,7 +13,7 @@ function doGet(request: GoogleAppsScript.Script.IParameters)
     return template.evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
 }
 
-function getCoreListData() : Object[]
+function getCoreListData() : any
 {
     var centralPurchasingSSID: string = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('CentralPurchasingSSID');
 
@@ -29,5 +29,18 @@ function getCoreListData() : Object[]
 
     var coreListData: Object[] = rangeUtils.convertToObjectArray();
 
-    return coreListData;
+    var processedTrades: string[] = [];
+
+    coreListData.forEach((value: any, index: number, arr: Object[]): boolean =>
+    {
+        if (processedTrades.indexOf(value.trade.toString().trim()) === -1)
+        {
+            processedTrades.push(value.trade.toString().trim());
+        }
+    });       
+
+    return {
+        coreListData: coreListData,
+        trades: processedTrades
+    };
 }
