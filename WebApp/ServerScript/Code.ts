@@ -13,7 +13,7 @@ function doGet(request: GoogleAppsScript.Script.IParameters)
     return template.evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
 }
 
-function getCoreListData() : any
+function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter) : any
 {
     var centralPurchasingSSID: string = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('CentralPurchasingSSID');
 
@@ -23,21 +23,47 @@ function getCoreListData() : any
 
     var lastRow: number = coreListSheet.getLastRow();
 
-    var coreListRange: GoogleAppsScript.Spreadsheet.Range = coreListSheet.getRange('A1:T' + lastRow);
+    var lastColumn: number = coreListSheet.getLastColumn();
 
-    var rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(coreListRange);
+    var coreListRange: GoogleAppsScript.Spreadsheet.Range = coreListSheet.getRange(1, 1, lastRow, lastColumn);
 
-    var coreListData: Object[] = rangeUtils.convertToObjectArray();
+    var filteredRows: Object[][] = null;
 
     var processedTrades: string[] = [];
 
-    coreListData.forEach((value: any, index: number, arr: Object[]): boolean =>
-    {
-        if (processedTrades.indexOf(value.trade.toString().trim()) === -1)
-        {
+    //Get the trades from the core list
+    var rangeUtils: jw.MaterialsTracker.Utilities.RangeUtilties;
+
+    rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(coreListRange);
+
+    var coreListData: Object[] = rangeUtils.convertToObjectArray();
+
+    coreListData.forEach((value: any, index: number, arr: Object[]): void => {
+        if (processedTrades.indexOf(value.trade.toString().trim()) === -1) {
             processedTrades.push(value.trade.toString().trim());
         }
-    });       
+    });
+
+    //If no filter has been passed only retrieve the trades
+    if (typeof filter != 'undefined')
+    {
+        filteredRows = jw.MaterialsTracker.Utilities.RangeUtilties.findRowsMatchingKey(coreListRange, filter.trade, 0, true);
+    } else
+    {
+        return {            
+            trades: processedTrades
+        };
+    }
+    
+    if (filteredRows == null)
+    {
+        rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(coreListRange);
+    } else
+    {
+        rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
+    }
+
+    coreListData = rangeUtils.convertToObjectArray();                   
 
     return {
         coreListData: coreListData,

@@ -3,15 +3,23 @@
     (function (MaterialsTracker) {
         (function (Utilities) {
             var RangeUtilties = (function () {
-                function RangeUtilties(range) {
+                function RangeUtilties(r) {
                     var _this = this;
+                    this.range = null;
+                    this.rangeValues = null;
                     this.convertToObjectArray = function () {
                         var ret = [];
 
                         //Read the first row of the range as the properties for the object
                         var propertyNames = [];
 
-                        var rangeValues = _this.range.getValues();
+                        var rangeValues;
+
+                        if (_this.rangeValues != null) {
+                            rangeValues = _this.rangeValues;
+                        } else {
+                            rangeValues = _this.range.getValues();
+                        }
 
                         var firstRow = rangeValues[0];
 
@@ -36,8 +44,40 @@
 
                         return ret;
                     };
-                    this.range = range;
+                    if (typeof r.activate == 'function') {
+                        this.range = r;
+                    } else {
+                        this.rangeValues = r;
+                    }
                 }
+                RangeUtilties.findRowsMatchingKey = function (range, lookupVal, keyColIndex, keepHeaderRow) {
+                    if (typeof keyColIndex === "undefined") { keyColIndex = 0; }
+                    if (typeof keepHeaderRow === "undefined") { keepHeaderRow = false; }
+                    var vals = range.getValues();
+                    var rowVals = null;
+
+                    var ret = new Array();
+
+                    if (keepHeaderRow) {
+                        ret.push(vals[0]);
+                    }
+
+                    for (var i = 0; i < vals.length; i++) {
+                        rowVals = vals[i];
+                        var keyColVal = rowVals[keyColIndex];
+
+                        if (typeof keyColVal != "undefined" && keyColVal.toString().toLowerCase() === lookupVal.toLowerCase()) {
+                            ret.push(rowVals);
+                        }
+                    }
+
+                    if (ret.length > 0) {
+                        return ret;
+                    }
+
+                    return null;
+                };
+
                 RangeUtilties.findFirstRowMatchingKey = function (range, lookupVal, keyColIndex) {
                     if (typeof keyColIndex === "undefined") { keyColIndex = 0; }
                     var vals = range.getValues();
@@ -122,13 +162,15 @@
 
                         var data = _this[getDataMethodName](projectLookupResponse);
 
+                        data.projectHash = _this.projectHash;
+
                         return {
                             templateName: templateName,
                             data: data
                         };
                     };
                     this.getIndexPageData = function (projectData) {
-                        var data = new Object();
+                        var data = {};
 
                         data['projectData'] = projectData;
 

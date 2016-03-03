@@ -12,7 +12,7 @@ function doGet(request) {
     return template.evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
 }
 
-function getCoreListData() {
+function getCoreListData(filter) {
     var centralPurchasingSSID = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('CentralPurchasingSSID');
 
     var centralPurchasingSS = SpreadsheetApp.openById(centralPurchasingSSID);
@@ -21,19 +21,43 @@ function getCoreListData() {
 
     var lastRow = coreListSheet.getLastRow();
 
-    var coreListRange = coreListSheet.getRange('A1:T' + lastRow);
+    var lastColumn = coreListSheet.getLastColumn();
 
-    var rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(coreListRange);
+    var coreListRange = coreListSheet.getRange(1, 1, lastRow, lastColumn);
 
-    var coreListData = rangeUtils.convertToObjectArray();
+    var filteredRows = null;
 
     var processedTrades = [];
+
+    //Get the trades from the core list
+    var rangeUtils;
+
+    rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(coreListRange);
+
+    var coreListData = rangeUtils.convertToObjectArray();
 
     coreListData.forEach(function (value, index, arr) {
         if (processedTrades.indexOf(value.trade.toString().trim()) === -1) {
             processedTrades.push(value.trade.toString().trim());
         }
     });
+
+    //If no filter has been passed only retrieve the trades
+    if (typeof filter != 'undefined') {
+        filteredRows = jw.MaterialsTracker.Utilities.RangeUtilties.findRowsMatchingKey(coreListRange, filter.trade, 0, true);
+    } else {
+        return {
+            trades: processedTrades
+        };
+    }
+
+    if (filteredRows == null) {
+        rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(coreListRange);
+    } else {
+        rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
+    }
+
+    coreListData = rangeUtils.convertToObjectArray();
 
     return {
         coreListData: coreListData,

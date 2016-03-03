@@ -17,6 +17,13 @@
         templateName: string;
         data: Object;
     }
+
+    export interface ICoreListFilter
+    {
+        trade?: string;
+        category?: string;
+        type?: string;
+    }
 } 
 
 module GoogleAppsScript.Script

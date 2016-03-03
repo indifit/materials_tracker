@@ -2,12 +2,23 @@
 {
     export class RangeUtilties
     {
-        private range: GoogleAppsScript.Spreadsheet.Range;
+        private range: GoogleAppsScript.Spreadsheet.Range = null;
 
-        constructor(range: GoogleAppsScript.Spreadsheet.Range)
-        {
-            this.range = range;
+        private rangeValues: Object[][] = null;
+
+        constructor(range: GoogleAppsScript.Spreadsheet.Range);
+        constructor(rangeValues: Object[][]);        
+        constructor(r: any)
+        {                                   
+            if (typeof r.activate == 'function')
+            {
+                this.range = r;
+            } else
+            {
+                this.rangeValues = r;
+            }            
         }
+        
 
         convertToObjectArray = (): Object[] =>
         {
@@ -16,7 +27,15 @@
             //Read the first row of the range as the properties for the object
             var propertyNames: string[] = [];
 
-            var rangeValues: Object[][] = this.range.getValues();
+            var rangeValues: Object[][];
+
+            if (this.rangeValues != null)
+            {
+                rangeValues = this.rangeValues;
+            } else
+            {
+                rangeValues = this.range.getValues();
+            }            
 
             var firstRow: Object[] = rangeValues[0];
 
@@ -46,6 +65,41 @@
             return ret;
         };
 
+        static findRowsMatchingKey = (
+            range: GoogleAppsScript.Spreadsheet.Range,
+            lookupVal: string,
+            keyColIndex: number = 0,
+            keepHeaderRow: boolean = false            
+            ): Object[][]=>
+        {
+            var vals: Object[][] = range.getValues();
+            var rowVals: Object[] = null;
+
+            var ret: Object[][] = new Array<Array<Object>>();
+
+            if (keepHeaderRow)
+            {
+                ret.push(vals[0]);
+            }
+
+            for (var i = 0; i < vals.length; i++) {
+                rowVals = vals[i];
+                var keyColVal = rowVals[keyColIndex];
+
+                if (typeof keyColVal != "undefined" && keyColVal.toString().toLowerCase() === lookupVal.toLowerCase())
+                {
+                    ret.push(rowVals);
+                }
+            }
+
+            if (ret.length > 0)
+            {
+                return ret;
+            }
+
+            return null;
+        };
+
         static findFirstRowMatchingKey = (
             range: GoogleAppsScript.Spreadsheet.Range,
             lookupVal: string,
@@ -54,17 +108,15 @@
         {
             var vals: Object[][] = range.getValues();
             var rowVals: Object[] = null;
-            for (var i = 0; i < vals.length; i++)
-            {
+            for (var i = 0; i < vals.length; i++) {
                 rowVals = vals[i];
-                var keyColVal = rowVals[keyColIndex];                
+                var keyColVal = rowVals[keyColIndex];
 
-                if (typeof keyColVal != "undefined" && keyColVal.toString().toLowerCase() === lookupVal.toLowerCase())
-                {
+                if (typeof keyColVal != "undefined" && keyColVal.toString().toLowerCase() === lookupVal.toLowerCase()) {
                     return rowVals;
                 }
             }
-            return null;
+            return null;            
         };        
     }
     
@@ -149,7 +201,9 @@
 
             var getDataMethodName: string = MaterialsTracker.Config.ConfigurationManager.getSetting(templateName + 'DataMethod');
 
-            var data: Object = this[getDataMethodName](projectLookupResponse);
+            var data: any = this[getDataMethodName](projectLookupResponse);
+
+            data.projectHash = this.projectHash;
 
             return {
                 templateName: templateName,
@@ -159,7 +213,7 @@
         
         getIndexPageData = (projectData: jw.MaterialsTracker.Interfaces.IProjectHashLookupResponse): Object =>
         {
-            var data = new Object();
+            var data: any = {};
 
             data['projectData'] = projectData;           
 
