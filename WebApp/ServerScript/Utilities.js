@@ -50,20 +50,18 @@
                         this.rangeValues = r;
                     }
                 }
-                RangeUtilties.findRowsMatchingKey = function (range, lookupVal, keyColIndex, keepHeaderRow) {
+                RangeUtilties.findRowsMatchingKey = function (rangeValues, lookupVal, keyColIndex, headerRow) {
                     if (typeof keyColIndex === "undefined") { keyColIndex = 0; }
-                    if (typeof keepHeaderRow === "undefined") { keepHeaderRow = false; }
-                    var vals = range.getValues();
-                    var rowVals = null;
+                    var rowVals;
 
                     var ret = new Array();
 
-                    if (keepHeaderRow) {
-                        ret.push(vals[0]);
+                    if (typeof headerRow != 'undefined') {
+                        ret.push(headerRow);
                     }
 
-                    for (var i = 0; i < vals.length; i++) {
-                        rowVals = vals[i];
+                    for (var i = 0; i < rangeValues.length; i++) {
+                        rowVals = rangeValues[i];
                         var keyColVal = rowVals[keyColIndex];
 
                         if (typeof keyColVal != "undefined" && keyColVal.toString().toLowerCase() === lookupVal.toLowerCase()) {

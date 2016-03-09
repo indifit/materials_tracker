@@ -29,7 +29,15 @@ function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter)
 
     var filteredRows: Object[][] = null;
 
-    var processedTrades: string[] = [];
+    var trades: string[] = [];
+
+    var subCategories: string[] = [];
+
+    var types: string[] = [];
+
+    var rangeValues: Object[][] = coreListRange.getValues();
+
+    var headerRow: Object[] = rangeValues[0];
 
     //Get the trades from the core list
     var rangeUtils: jw.MaterialsTracker.Utilities.RangeUtilties;
@@ -39,34 +47,70 @@ function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter)
     var coreListData: Object[] = rangeUtils.convertToObjectArray();
 
     coreListData.forEach((value: any, index: number, arr: Object[]): void => {
-        if (processedTrades.indexOf(value.trade.toString().trim()) === -1) {
-            processedTrades.push(value.trade.toString().trim());
+        if (trades.indexOf(value.trade.toString().trim()) === -1) {
+            trades.push(value.trade.toString().trim());
         }
     });
 
     //If no filter has been passed only retrieve the trades
     if (typeof filter != 'undefined')
     {
-        filteredRows = jw.MaterialsTracker.Utilities.RangeUtilties.findRowsMatchingKey(coreListRange, filter.trade, 0, true);
+        //Filter the rows to those for the selected trade
+        filteredRows = jw.MaterialsTracker.Utilities.RangeUtilties.findRowsMatchingKey(rangeValues, filter.trade, 0, headerRow);
+
+        rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
+
+        coreListData = rangeUtils.convertToObjectArray();
+        
+        //Retrieve the sub categories associated with the selected trade
+        coreListData.forEach((value: any): void =>
+        {
+            if (subCategories.indexOf(value.productsubcategory.toString().trim()) === -1)
+            {
+                subCategories.push(value.productsubcategory.toString().trim());
+            }
+        });
+
+        if (typeof filter.category != 'undefined')
+        {
+            //Filter the rows again to those for the selected category
+            filteredRows = jw.MaterialsTracker.Utilities.RangeUtilties.findRowsMatchingKey(filteredRows, filter.category, 3, headerRow);
+
+            rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
+
+            coreListData = rangeUtils.convertToObjectArray();
+
+            //Retrieve the types for the category selected
+            coreListData.forEach((value: any): void =>
+            {
+                if (types.indexOf(value.type.toString().trim()) === -1)
+                {
+                    types.push(value.type.toString().trim());
+                }
+            });
+        }
+
+        if (typeof filter.type != 'undefined') {
+            //Filter the rows again to those for the selected type
+            filteredRows = jw.MaterialsTracker.Utilities.RangeUtilties.findRowsMatchingKey(filteredRows, filter.type, 4, headerRow);
+
+            rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
+
+            coreListData = rangeUtils.convertToObjectArray();            
+        }
+
+        return {
+            coreListData: coreListData,
+            trades: trades,
+            subCategories: subCategories,
+            types: types
+        };
+
     } else
     {
         return {            
-            trades: processedTrades
+            trades: trades
         };
     }
-    
-    if (filteredRows == null)
-    {
-        rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(coreListRange);
-    } else
-    {
-        rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
-    }
-
-    coreListData = rangeUtils.convertToObjectArray();                   
-
-    return {
-        coreListData: coreListData,
-        trades: processedTrades
-    };
+       
 }

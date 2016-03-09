@@ -66,24 +66,23 @@
         };
 
         static findRowsMatchingKey = (
-            range: GoogleAppsScript.Spreadsheet.Range,
+            rangeValues: Object[][],
             lookupVal: string,
             keyColIndex: number = 0,
-            keepHeaderRow: boolean = false            
-            ): Object[][]=>
-        {
-            var vals: Object[][] = range.getValues();
-            var rowVals: Object[] = null;
+            headerRow?: Object[]
+            ): Object[][] =>
+        {            
+            var rowVals: Object[];
 
             var ret: Object[][] = new Array<Array<Object>>();
 
-            if (keepHeaderRow)
+            if (typeof headerRow != 'undefined')
             {
-                ret.push(vals[0]);
+                ret.push(headerRow);
             }
 
-            for (var i = 0; i < vals.length; i++) {
-                rowVals = vals[i];
+            for (var i = 0; i < rangeValues.length; i++) {
+                rowVals = rangeValues[i];
                 var keyColVal = rowVals[keyColIndex];
 
                 if (typeof keyColVal != "undefined" && keyColVal.toString().toLowerCase() === lookupVal.toLowerCase())
