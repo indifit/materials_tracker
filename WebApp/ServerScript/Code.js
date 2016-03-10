@@ -91,11 +91,41 @@ function getCoreListData(filter) {
             coreListData = rangeUtils.convertToObjectArray();
         }
 
+        //Retrieve the valid project dimensions for the filtered items
+        var allpdcsSheet = centralPurchasingSS.getSheetByName('PDCs');
+
+        var allpdcsRange = allpdcsSheet.getRange(2, 1, allpdcsSheet.getLastRow(), allpdcsSheet.getLastColumn());
+
+        var pdcs = {};
+
+        coreListData.forEach(function (value) {
+            var pdcString = value.pDC;
+
+            var pdcArray = pdcString.split(';');
+
+            pdcArray.forEach(function (pdcCode) {
+                if (typeof pdcs[pdcCode] == 'undefined') {
+                    var row = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(allpdcsRange, pdcCode);
+
+                    if (row != null) {
+                        pdcs[pdcCode] = row[1].toString();
+                    }
+                }
+            });
+        });
+
+        var projectDimensions = [];
+
+        for (var key in pdcs) {
+            projectDimensions.push({ code: key, description: pdcs[key] });
+        }
+
         return {
             coreListData: coreListData,
             trades: trades,
             subCategories: subCategories,
-            types: types
+            types: types,
+            projectDimensions: projectDimensions
         };
     } else {
         return {

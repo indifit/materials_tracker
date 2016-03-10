@@ -96,14 +96,49 @@ function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter)
 
             rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
 
-            coreListData = rangeUtils.convertToObjectArray();            
+            coreListData = rangeUtils.convertToObjectArray();                        
+        }
+
+        //Retrieve the valid project dimensions for the filtered items
+        var allpdcsSheet = centralPurchasingSS.getSheetByName('PDCs');
+
+        var allpdcsRange = allpdcsSheet.getRange(2, 1, allpdcsSheet.getLastRow(), allpdcsSheet.getLastColumn());
+
+        var pdcs: { [key: string]: string } = {};
+
+        coreListData.forEach((value: any): void =>
+        {
+            var pdcString = value.pDC;
+
+            var pdcArray = pdcString.split(';');
+
+            pdcArray.forEach((pdcCode: any): void =>
+            {
+                if (typeof pdcs[pdcCode] == 'undefined')
+                {
+                    var row: Object[] = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(allpdcsRange, pdcCode);
+
+                    if (row != null)
+                    {
+                        pdcs[pdcCode] = row[1].toString();
+                    }
+                }
+            });
+        });
+
+        var projectDimensions: { code: string; description: string }[] = [];
+
+        for (var key in pdcs)
+        {
+            projectDimensions.push({ code: key, description: pdcs[key] });
         }
 
         return {
             coreListData: coreListData,
             trades: trades,
             subCategories: subCategories,
-            types: types
+            types: types,
+            projectDimensions: projectDimensions
         };
 
     } else

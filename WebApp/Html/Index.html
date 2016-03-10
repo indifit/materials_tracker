@@ -25,20 +25,20 @@
 
             <div class="col-xs-12">
                 <div class="row">
-                    <h3 class="col-xs-3">Core List</h3>
-                    <div class="col-xs-9 form-inline" data-bind="visible: trades().length != 0">
+                    <h3 class="col-xs-2">Core List</h3>
+                    <div class="col-xs-10 form-inline" data-bind="visible: trades().length != 0">
                         <div class="form-group">
                             <label for="trades">Trade:</label>
-                            <select class="form-control" id="trades" data-bind="options: trades, value: selectedTrade, optionsCaption: 'Please Select...'"></select>
+                            <select class="form-control" data-bind="options: trades, value: selectedTrade, optionsCaption: 'Please Select...'"></select>
                         </div>
                         <div class="form-group" data-bind="visible: subCategories().length != 0">
                             <label for="trades">Category:</label>
-                            <select class="form-control" id="trades" data-bind="options: subCategories, value: selectedSubCategory, optionsCaption: 'Please Select...'"></select>
+                            <select class="form-control" data-bind="options: subCategories, value: selectedSubCategory, optionsCaption: 'Please Select...'"></select>
                         </div>
                         <div class="form-group" data-bind="visible: types().length != 0">
                             <label for="trades">Type:</label>
-                            <select class="form-control" id="trades" data-bind="options: types, value: selectedType, optionsCaption: 'Please Select...'"></select>
-                        </div>
+                            <select class="form-control" data-bind="options: types, value: selectedType, optionsCaption: 'Please Select...'"></select>
+                        </div>                        
                     </div>
                 </div>
 
@@ -94,7 +94,15 @@
                             </tbody>
                         </table>
                     </div>
-                </div>                
+                </div>
+                <div class="row" data-bind="visible: projectDimensions().length != 0">
+                    <div class="form-inline">
+                        <div class="form-group">
+                            <label>Project Dimension:</label>
+                            <select class="form-control" data-bind="options: projectDimensions, optionsText: function(item){return item.code + ' (' + item.description + ')';}, value: selectedProjectDimension, optionsCaption: 'Please Select...'"></select>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -124,6 +132,11 @@
             model.types(data.types);
         }
 
+        if (typeof data.projectDimensions !== 'undefined')
+        {            
+            model.projectDimensions(data.projectDimensions);
+        }
+
         toastr.clear();
     }
 
@@ -141,9 +154,11 @@
             trades: ko.observableArray([]),
             subCategories: ko.observableArray([]),
             types: ko.observableArray([]),
+            projectDimensions: ko.observableArray([]),
             selectedTrade: ko.observable(''),
             selectedSubCategory: ko.observable(''),
-            selectedType: ko.observable('')
+            selectedType: ko.observable(''),
+            selectedProjectDimension: ko.observable()
         };
 
         model.selectedTrade.subscribe(function (newValue) {
