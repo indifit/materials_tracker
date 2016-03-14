@@ -12,6 +12,34 @@ function doGet(request) {
     return template.evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
 }
 
+function getSavedItems(projectSsid) {
+    var projectSs = SpreadsheetApp.openById(projectSsid);
+
+    var materialsTrackingSheet = projectSs.getSheetByName('Materials Tracking');
+
+    var savedItemsRange = materialsTrackingSheet.getRange(2, 1, materialsTrackingSheet.getLastRow(), materialsTrackingSheet.getLastColumn());
+
+    var savedItemsValues = savedItemsRange.getValues();
+
+    var rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(savedItemsValues);
+
+    var savedItems = rangeUtils.convertToObjectArray();
+
+    var ret = [];
+
+    for (var i = 0; i < savedItems.length; i++) {
+        if (savedItems[i].itemCode !== '') {
+            ret.push({
+                itemCode: savedItems[i].itemCode.toString(),
+                pdc: savedItems[i].pdCode.toString(),
+                quantity: parseInt(savedItems[i].qty.toString())
+            });
+        }
+    }
+
+    return ret;
+}
+
 function getCoreListData(filter) {
     var centralPurchasingSSID = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('CentralPurchasingSSID');
 
@@ -44,7 +72,9 @@ function getCoreListData(filter) {
 
     var coreListData = rangeUtils.convertToObjectArray();
 
-    coreListData.forEach(function (value, index, arr) {
+    var filteredListData = rangeUtils.convertToObjectArray();
+
+    filteredListData.forEach(function (value, index, arr) {
         if (trades.indexOf(value.trade.toString().trim()) === -1) {
             trades.push(value.trade.toString().trim());
         }
@@ -57,12 +87,12 @@ function getCoreListData(filter) {
 
         rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
 
-        coreListData = rangeUtils.convertToObjectArray();
+        filteredListData = rangeUtils.convertToObjectArray();
 
         //Retrieve the sub categories associated with the selected trade
-        coreListData.forEach(function (value) {
-            if (subCategories.indexOf(value.productsubcategory.toString().trim()) === -1) {
-                subCategories.push(value.productsubcategory.toString().trim());
+        filteredListData.forEach(function (value) {
+            if (subCategories.indexOf(value.productSubCategory.toString().trim()) === -1) {
+                subCategories.push(value.productSubCategory.toString().trim());
             }
         });
 
@@ -72,10 +102,10 @@ function getCoreListData(filter) {
 
             rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
 
-            coreListData = rangeUtils.convertToObjectArray();
+            filteredListData = rangeUtils.convertToObjectArray();
 
             //Retrieve the types for the category selected
-            coreListData.forEach(function (value) {
+            filteredListData.forEach(function (value) {
                 if (types.indexOf(value.type.toString().trim()) === -1) {
                     types.push(value.type.toString().trim());
                 }
@@ -88,7 +118,7 @@ function getCoreListData(filter) {
 
             rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
 
-            coreListData = rangeUtils.convertToObjectArray();
+            filteredListData = rangeUtils.convertToObjectArray();
         }
 
         //Retrieve the valid project dimensions for the filtered items
@@ -96,39 +126,33 @@ function getCoreListData(filter) {
 
         var allpdcsRange = allpdcsSheet.getRange(2, 1, allpdcsSheet.getLastRow(), allpdcsSheet.getLastColumn());
 
-        var pdcs = {};
+        filteredListData.forEach(function (value) {
+            var pdcString = value.pdc;
 
-        coreListData.forEach(function (value) {
-            var pdcString = value.pDC;
-
+            //Get the pdc codes for this item
             var pdcArray = pdcString.split(';');
 
-            pdcArray.forEach(function (pdcCode) {
-                if (typeof pdcs[pdcCode] == 'undefined') {
-                    var row = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(allpdcsRange, pdcCode);
+            value.pdcs = [];
 
-                    if (row != null) {
-                        pdcs[pdcCode] = row[1].toString();
-                    }
+            pdcArray.forEach(function (pdcCode) {
+                var row = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(allpdcsRange, pdcCode);
+
+                if (row != null) {
+                    value.pdcs.push({ code: pdcCode, description: row[1].toString() });
                 }
             });
         });
 
-        var projectDimensions = [];
-
-        for (var key in pdcs) {
-            projectDimensions.push({ code: key, description: pdcs[key] });
-        }
-
         return {
             coreListData: coreListData,
+            filteredListData: filteredListData,
             trades: trades,
             subCategories: subCategories,
-            types: types,
-            projectDimensions: projectDimensions
+            types: types
         };
     } else {
         return {
+            coreListData: coreListData,
             trades: trades
         };
     }

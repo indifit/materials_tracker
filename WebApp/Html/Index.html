@@ -63,14 +63,12 @@
                                     Part Number
                                 </th>
                                 <th>
-                                    Purchase UoM
+                                    Project Dimension
                                 </th>
                                 <th>
-                                    Factor
+                                    Quantity Required
                                 </th>
-                                <th>
-                                    Base UoM
-                                </th>
+                                <th>&nbsp;</th>
                             </tr>
                             </thead>
                             <tbody data-bind="if: typeof items == 'undefined' || items == null || items().length == 0">
@@ -87,20 +85,72 @@
                                 <td data-bind="text: manufacturer"></td>
                                 <td data-bind="text: brand"></td>
                                 <td data-bind="text: partNumber"></td>
-                                <td data-bind="text: purchaseUOM"></td>
-                                <td data-bind="text: factor"></td>
-                                <td data-bind="text: baseUOM"></td>
+                                <td>
+                                    <select class="form-control" data-bind="options: pdcs, optionsText: function(item){ return item.code + ' ('  + item.description + ')'}, "></select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control input-sm pull-right" style="width: 45px;"/>
+                                </td>
+                                <td data-bind="text: purchaseUom + ' @ ' + factor + baseUom"></td>
                             </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="row" data-bind="visible: projectDimensions().length != 0">
-                    <div class="form-inline">
-                        <div class="form-group">
-                            <label>Project Dimension:</label>
-                            <select class="form-control" data-bind="options: projectDimensions, optionsText: function(item){return item.code + ' (' + item.description + ')';}, value: selectedProjectDimension, optionsCaption: 'Please Select...'"></select>
-                        </div>
+                <div class="row">
+                    <div class="col-xs-12">
+                        <h3>Saved Project Items</h3>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="long-list-wrapper">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Item Code
+                                    </th>
+                                    <th>
+                                        Item Description
+                                    </th>
+                                    <th>
+                                        Manufacturer
+                                    </th>
+                                    <th>
+                                        Brand
+                                    </th>
+                                    <th>
+                                        Part Number
+                                    </th>
+                                    <th>
+                                        Project Dimension
+                                    </th>
+                                    <th>
+                                        Quantity Required
+                                    </th>
+                                    <th>&nbsp;</th>
+                                </tr>
+                            </thead>
+                            <tbody data-bind="if: typeof savedItems == 'undefined' || savedItems == null || savedItems().length == 0">
+                                <tr class="info">
+                                    <td colspan="8">
+                                        No Core List items have been saved yet.
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tbody data-bind="foreach: savedItems">
+                                <tr>
+                                    <td data-bind="text: itemCode"></td>
+                                    <td data-bind="text: itemDescription"></td>
+                                    <td data-bind="text: manufacturer"></td>
+                                    <td data-bind="text: brand"></td>
+                                    <td data-bind="text: partNumber"></td>
+                                    <td data-bind="text: pdc"></td>
+                                    <td data-bind="text: quantity"></td>
+                                    <td data-bind="text: purchaseUom + ' @ ' + factor + baseUom"></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -115,10 +165,12 @@
 
     function loadData(data) {
         if (typeof data.coreListData != 'undefined') {
-            model.items(data.coreListData);
+            model.allItems(data.coreListData);
         }
 
-        console.log(model.items().length);
+        if (typeof data.filteredListData != 'undefined') {
+            model.items(data.filteredListData);
+        }
 
         model.trades(data.trades);
 
@@ -138,6 +190,31 @@
         }
 
         toastr.clear();
+
+        showLoadingSaved();
+
+        google.script.run.withSuccessHandler(loadSavedItems).getSavedItems(projectSsid);
+    }
+
+    function loadSavedItems(data)
+    {
+        for (var i = 0; i < model.allItems().length; i++)
+        {
+            var itemsSaved = $.grep(data, function(el)
+            {
+                return el.itemCode === model.allItems()[i].itemCode;
+            });
+
+            if (itemsSaved.length > 0)
+            {
+                var savedItem = model.allItems()[i];
+                savedItem.quantity = itemsSaved[0].quantity;
+                savedItem.pdc = itemsSaved[0].pdc;
+                model.savedItems.push(savedItem);
+            }
+        }
+
+        toastr.clear();        
     }
 
     function showLoading()
@@ -145,11 +222,17 @@
         toastr.warning('Please wait while Core List items load', 'Loading...', { timeOut: 0, tapToDismiss: false, positionClass: 'toast-top-full-width' });
     }
 
+    function showLoadingSaved()
+    {
+        toastr.warning('Please wait while your saved Core List items load', 'Loading...', { timeOut: 0, tapToDismiss: false, positionClass: 'toast-top-full-width' });
+    }
+
     $(function () {
         console.log('CoreList data coming...');
 
         model = {
             items: ko.observableArray([]),
+            allItems: ko.observableArray([]),
             selectedItems: ko.observableArray([]),
             trades: ko.observableArray([]),
             subCategories: ko.observableArray([]),
@@ -158,7 +241,8 @@
             selectedTrade: ko.observable(''),
             selectedSubCategory: ko.observable(''),
             selectedType: ko.observable(''),
-            selectedProjectDimension: ko.observable()
+            selectedProjectDimension: ko.observable(),
+            savedItems: ko.observableArray([])
         };
 
         model.selectedTrade.subscribe(function (newValue) {
@@ -208,6 +292,6 @@
 
         showLoading();
 
-        google.script.run.withSuccessHandler(loadData).getCoreListData();
+        google.script.run.withSuccessHandler(loadData).getCoreListData();        
     });
 </script>

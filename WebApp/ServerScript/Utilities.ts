@@ -18,6 +18,28 @@
                 this.rangeValues = r;
             }            
         }
+
+        toCamelCase = (input: string): string =>
+        {
+            //Split the input at the spaces
+            var words: string[] = input.split(' ');            
+                        
+            for (var i = 0; i < words.length; i++)
+            {                
+                if (i === 0)
+                {
+                    //convert the first word to lower case            
+                    words[i] = words[i].toLowerCase();
+                } else
+                {
+                    //Capitalise the first letter of the remaining words
+                    words[i] = words[i].substr(0, 1).toUpperCase() + words[i].substring(1).toLowerCase();
+                }                
+            }
+
+            //Re-join the array
+            return words.join('');
+        };
         
 
         convertToObjectArray = (): Object[] =>
@@ -43,16 +65,14 @@
             {
                 if (firstRow[i].toString() !== '')
                 {
-                    var regExp = new RegExp('\\s', 'g');
-                    var thisPropertyName: string = firstRow[i].toString().replace(regExp, '');
-                    thisPropertyName = thisPropertyName.substr(0, 1).toLowerCase() + thisPropertyName.substring(1);
+                    var thisPropertyName: string = this.toCamelCase(firstRow[i].toString());                    
                     propertyNames.push(thisPropertyName);
                 }
             }
 
             for (var j = 1; j < rangeValues.length; j++)
             {
-                var thisObject = new Object();
+                var thisObject: any = {};
 
                 for (var k = 0; k < propertyNames.length; k++)
                 {
@@ -105,13 +125,15 @@
             keyColIndex: number = 0            
             ): Object[]=>
         {
-            var vals: Object[][] = range.getValues();
-            var rowVals: Object[] = null;
+            var vals: Object[][] = range.getValues();            
+
+            var rowVals: Object[];            
+
             for (var i = 0; i < vals.length; i++) {
                 rowVals = vals[i];
-                var keyColVal = rowVals[keyColIndex];
+                var keyColVal = rowVals[keyColIndex];                
 
-                if (typeof keyColVal != "undefined" && keyColVal.toString().toLowerCase() === lookupVal.toLowerCase()) {
+                if (typeof keyColVal != 'undefined' && keyColVal.toString().toLowerCase() === lookupVal.toLowerCase()) {
                     return rowVals;
                 }
             }
@@ -139,7 +161,7 @@
 
             var sheet: GoogleAppsScript.Spreadsheet.Sheet = hashLookupSs.getSheets()[0];
 
-            var range: GoogleAppsScript.Spreadsheet.Range = sheet.getRange(2, 1, 100, 4);
+            var range: GoogleAppsScript.Spreadsheet.Range = sheet.getRange(2, 1, sheet.getLastColumn(), sheet.getLastRow());
 
             var projHashRow: Object[] = RangeUtilties.findFirstRowMatchingKey(range, this.projectHash);
 
@@ -149,7 +171,8 @@
                     projectNumber: parseInt(projHashRow[1].toString()),
                     urlHash: projHashRow[0].toString(),
                     projectName: projHashRow[2].toString(),
-                    kingdomHallAddress: projHashRow[3].toString()
+                    projectSsid: typeof projHashRow[3] !== 'undefined' ? projHashRow[3].toString() : '',
+                    kingdomHallAddress: typeof projHashRow[4] !== 'undefined' ? projHashRow[4].toString() : ''                    
                 };
 
                 return response;
@@ -188,7 +211,7 @@
             }
             
             //Lookup the destination page and get any necessary data
-            var templateName: string = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('PageHash' + this.pageHash);
+            var templateName: string = MaterialsTracker.Config.ConfigurationManager.getSetting('PageHash' + this.pageHash);
 
             if (templateName == null)
             {
@@ -210,11 +233,11 @@
             };
         };
         
-        getIndexPageData = (projectData: jw.MaterialsTracker.Interfaces.IProjectHashLookupResponse): Object =>
+        getIndexPageData = (projectData: MaterialsTracker.Interfaces.IProjectHashLookupResponse): Object =>
         {
             var data: any = {};
 
-            data['projectData'] = projectData;           
+            data['projectData'] = projectData;                                                   
 
             return data;
         }

@@ -7,6 +7,23 @@
                     var _this = this;
                     this.range = null;
                     this.rangeValues = null;
+                    this.toCamelCase = function (input) {
+                        //Split the input at the spaces
+                        var words = input.split(' ');
+
+                        for (var i = 0; i < words.length; i++) {
+                            if (i === 0) {
+                                //convert the first word to lower case
+                                words[i] = words[i].toLowerCase();
+                            } else {
+                                //Capitalise the first letter of the remaining words
+                                words[i] = words[i].substr(0, 1).toUpperCase() + words[i].substring(1).toLowerCase();
+                            }
+                        }
+
+                        //Re-join the array
+                        return words.join('');
+                    };
                     this.convertToObjectArray = function () {
                         var ret = [];
 
@@ -25,15 +42,13 @@
 
                         for (var i = 0; i < firstRow.length; i++) {
                             if (firstRow[i].toString() !== '') {
-                                var regExp = new RegExp('\\s', 'g');
-                                var thisPropertyName = firstRow[i].toString().replace(regExp, '');
-                                thisPropertyName = thisPropertyName.substr(0, 1).toLowerCase() + thisPropertyName.substring(1);
+                                var thisPropertyName = _this.toCamelCase(firstRow[i].toString());
                                 propertyNames.push(thisPropertyName);
                             }
                         }
 
                         for (var j = 1; j < rangeValues.length; j++) {
-                            var thisObject = new Object();
+                            var thisObject = {};
 
                             for (var k = 0; k < propertyNames.length; k++) {
                                 thisObject[propertyNames[k]] = rangeValues[j][k].toString();
@@ -79,12 +94,14 @@
                 RangeUtilties.findFirstRowMatchingKey = function (range, lookupVal, keyColIndex) {
                     if (typeof keyColIndex === "undefined") { keyColIndex = 0; }
                     var vals = range.getValues();
-                    var rowVals = null;
+
+                    var rowVals;
+
                     for (var i = 0; i < vals.length; i++) {
                         rowVals = vals[i];
                         var keyColVal = rowVals[keyColIndex];
 
-                        if (typeof keyColVal != "undefined" && keyColVal.toString().toLowerCase() === lookupVal.toLowerCase()) {
+                        if (typeof keyColVal != 'undefined' && keyColVal.toString().toLowerCase() === lookupVal.toLowerCase()) {
                             return rowVals;
                         }
                     }
@@ -105,7 +122,7 @@
 
                         var sheet = hashLookupSs.getSheets()[0];
 
-                        var range = sheet.getRange(2, 1, 100, 4);
+                        var range = sheet.getRange(2, 1, sheet.getLastColumn(), sheet.getLastRow());
 
                         var projHashRow = RangeUtilties.findFirstRowMatchingKey(range, _this.projectHash);
 
@@ -114,7 +131,8 @@
                                 projectNumber: parseInt(projHashRow[1].toString()),
                                 urlHash: projHashRow[0].toString(),
                                 projectName: projHashRow[2].toString(),
-                                kingdomHallAddress: projHashRow[3].toString()
+                                projectSsid: typeof projHashRow[3] !== 'undefined' ? projHashRow[3].toString() : '',
+                                kingdomHallAddress: typeof projHashRow[4] !== 'undefined' ? projHashRow[4].toString() : ''
                             };
 
                             return response;
@@ -147,7 +165,7 @@
                         }
 
                         //Lookup the destination page and get any necessary data
-                        var templateName = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('PageHash' + _this.pageHash);
+                        var templateName = MaterialsTracker.Config.ConfigurationManager.getSetting('PageHash' + _this.pageHash);
 
                         if (templateName == null) {
                             return {

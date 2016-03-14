@@ -13,7 +13,38 @@ function doGet(request: GoogleAppsScript.Script.IParameters)
     return template.evaluate().setTitle('Materials Tracker').setSandboxMode(HtmlService.SandboxMode.IFRAME);
 }
 
-function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter) : any
+function getSavedItems(projectSsid: string): jw.MaterialsTracker.Interfaces.ISavedItem[]
+{
+    var projectSs: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(projectSsid);       
+
+    var materialsTrackingSheet: GoogleAppsScript.Spreadsheet.Sheet = projectSs.getSheetByName('Materials Tracking');
+
+    var savedItemsRange: GoogleAppsScript.Spreadsheet.Range = materialsTrackingSheet.getRange(2, 1, materialsTrackingSheet.getLastRow(), materialsTrackingSheet.getLastColumn());
+
+    var savedItemsValues = savedItemsRange.getValues();
+
+    var rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(savedItemsValues);
+
+    var savedItems: any[] = rangeUtils.convertToObjectArray();
+
+    var ret: jw.MaterialsTracker.Interfaces.ISavedItem[] = [];
+
+    for (var i = 0; i < savedItems.length; i++)
+    {
+        if (savedItems[i].itemCode !== '')
+        {
+            ret.push({
+                itemCode: savedItems[i].itemCode.toString(),
+                pdc: savedItems[i].pdCode.toString(),
+                quantity: parseInt(savedItems[i].qty.toString())
+            });   
+        }        
+    }
+
+    return ret;
+}
+
+function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter) : jw.MaterialsTracker.Interfaces.ICoreListData
 {
     var centralPurchasingSSID: string = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('CentralPurchasingSSID');
 
@@ -46,7 +77,9 @@ function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter)
 
     var coreListData: Object[] = rangeUtils.convertToObjectArray();
 
-    coreListData.forEach((value: any, index: number, arr: Object[]): void => {
+    var filteredListData: Object[] = rangeUtils.convertToObjectArray();
+
+    filteredListData.forEach((value: any, index: number, arr: Object[]): void => {
         if (trades.indexOf(value.trade.toString().trim()) === -1) {
             trades.push(value.trade.toString().trim());
         }
@@ -60,14 +93,14 @@ function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter)
 
         rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
 
-        coreListData = rangeUtils.convertToObjectArray();
+        filteredListData = rangeUtils.convertToObjectArray();
         
         //Retrieve the sub categories associated with the selected trade
-        coreListData.forEach((value: any): void =>
+        filteredListData.forEach((value: any): void =>
         {
-            if (subCategories.indexOf(value.productsubcategory.toString().trim()) === -1)
+            if (subCategories.indexOf(value.productSubCategory.toString().trim()) === -1)
             {
-                subCategories.push(value.productsubcategory.toString().trim());
+                subCategories.push(value.productSubCategory.toString().trim());
             }
         });
 
@@ -78,10 +111,10 @@ function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter)
 
             rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
 
-            coreListData = rangeUtils.convertToObjectArray();
+            filteredListData = rangeUtils.convertToObjectArray();
 
             //Retrieve the types for the category selected
-            coreListData.forEach((value: any): void =>
+            filteredListData.forEach((value: any): void =>
             {
                 if (types.indexOf(value.type.toString().trim()) === -1)
                 {
@@ -96,54 +129,45 @@ function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter)
 
             rangeUtils = new jw.MaterialsTracker.Utilities.RangeUtilties(filteredRows);
 
-            coreListData = rangeUtils.convertToObjectArray();                        
+            filteredListData = rangeUtils.convertToObjectArray();                        
         }
 
         //Retrieve the valid project dimensions for the filtered items
         var allpdcsSheet = centralPurchasingSS.getSheetByName('PDCs');
 
-        var allpdcsRange = allpdcsSheet.getRange(2, 1, allpdcsSheet.getLastRow(), allpdcsSheet.getLastColumn());
+        var allpdcsRange = allpdcsSheet.getRange(2, 1, allpdcsSheet.getLastRow(), allpdcsSheet.getLastColumn());        
 
-        var pdcs: { [key: string]: string } = {};
-
-        coreListData.forEach((value: any): void =>
+        filteredListData.forEach((value: any): void =>
         {
-            var pdcString = value.pDC;
+            var pdcString = value.pdc;
 
+            //Get the pdc codes for this item
             var pdcArray = pdcString.split(';');
+
+            value.pdcs = [];
 
             pdcArray.forEach((pdcCode: any): void =>
             {
-                if (typeof pdcs[pdcCode] == 'undefined')
-                {
-                    var row: Object[] = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(allpdcsRange, pdcCode);
+                var row: Object[] = jw.MaterialsTracker.Utilities.RangeUtilties.findFirstRowMatchingKey(allpdcsRange, pdcCode);
 
-                    if (row != null)
-                    {
-                        pdcs[pdcCode] = row[1].toString();
-                    }
-                }
+                if (row != null) {
+                    value.pdcs.push({ code: pdcCode, description: row[1].toString() });
+                }                                
             });
         });
 
-        var projectDimensions: { code: string; description: string }[] = [];
-
-        for (var key in pdcs)
-        {
-            projectDimensions.push({ code: key, description: pdcs[key] });
-        }
-
         return {
             coreListData: coreListData,
+            filteredListData: filteredListData,
             trades: trades,
             subCategories: subCategories,
-            types: types,
-            projectDimensions: projectDimensions
+            types: types
         };
 
     } else
     {
-        return {            
+        return {    
+            coreListData: coreListData,        
             trades: trades
         };
     }

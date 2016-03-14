@@ -10,6 +10,7 @@
         projectName: string;
         kingdomHallAddress?: string;
         urlHash: string;
+        projectSsid?: string;
     }
 
     export interface IPage
@@ -23,6 +24,22 @@
         trade?: string;
         category?: string;
         type?: string;
+    }
+
+    export interface ICoreListData
+    {
+        coreListData: Object[];
+        filteredListData?: Object[];
+        trades?: string[];
+        subCategories?: string[];
+        types?: string[];
+    }    
+
+    export interface ISavedItem
+    {
+        itemCode: string;
+        quantity: number;
+        pdc: string;
     }
 } 
 
