@@ -19,6 +19,7 @@
             <div class="col-xs-8">
                 <h3>
                     <?=data.projectData.kingdomHallAddress?>
+
                 </h3>
             </div>
             <?}?>
@@ -38,7 +39,7 @@
                         <div class="form-group" data-bind="visible: types().length != 0">
                             <label for="trades">Type:</label>
                             <select class="form-control" data-bind="options: types, value: selectedType, optionsCaption: 'Please Select...'"></select>
-                        </div>                        
+                        </div>
                     </div>
                 </div>
 
@@ -46,53 +47,53 @@
                     <div class="long-list-wrapper">
                         <table class="table table-hover">
                             <thead>
-                            <tr>
-                                <th>
-                                    Item Code
-                                </th>
-                                <th>
-                                    Item Description
-                                </th>
-                                <th>
-                                    Manufacturer
-                                </th>
-                                <th>
-                                    Brand
-                                </th>
-                                <th>
-                                    Part Number
-                                </th>
-                                <th>
-                                    Project Dimension
-                                </th>
-                                <th>
-                                    Quantity Required
-                                </th>
-                                <th>&nbsp;</th>
-                            </tr>
+                                <tr>
+                                    <th>
+                                        Item Code
+                                    </th>
+                                    <th>
+                                        Item Description
+                                    </th>
+                                    <th>
+                                        Manufacturer
+                                    </th>
+                                    <th>
+                                        Brand
+                                    </th>
+                                    <th>
+                                        Part Number
+                                    </th>
+                                    <th>
+                                        Project Dimension
+                                    </th>
+                                    <th>
+                                        Quantity Required
+                                    </th>
+                                    <th>&nbsp;</th>
+                                </tr>
                             </thead>
                             <tbody data-bind="if: typeof items == 'undefined' || items == null || items().length == 0">
-                            <tr class="info">
-                                <td colspan="8">
-                                    No Core List items have been loaded yet.
-                                </td>
-                            </tr>
+                                <tr class="info">
+                                    <td colspan="8">
+                                        No Core List items have been loaded yet.
+                                    </td>
+                                </tr>
                             </tbody>
                             <tbody data-bind="foreach: items">
-                            <tr>
-                                <td data-bind="text: itemCode"></td>
-                                <td data-bind="text: itemDescription"></td>
-                                <td data-bind="text: manufacturer"></td>
-                                <td data-bind="text: brand"></td>
-                                <td data-bind="text: partNumber"></td>
-                                <td>
-                                    <select class="form-control" data-bind="options: pdcs, optionsText: function(item){ return item.code + ' ('  + item.description + ')'}, "></select>
-                                </td>
-                                <td>
-                                    <input type="text" class="form-control input-sm pull-right" style="width: 45px;"/>
-                                </td>
-                                <td data-bind="text: purchaseUom + ' @ ' + factor + baseUom"></td>
-                            </tr>
+                                <tr>
+                                    <td data-bind="text: itemCode"></td>
+                                    <td data-bind="text: itemDescription"></td>
+                                    <td data-bind="text: manufacturer"></td>
+                                    <td data-bind="text: brand"></td>
+                                    <td data-bind="text: partNumber"></td>
+                                    <td>
+                                        <select class="form-control" data-bind="options: pdcs, optionsText: function(item){ return item.code + ' ('  + item.description + ')'}, "></select>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control input-sm pull-right" style="width: 45px;" />
+                                    </td>
+                                    <td data-bind="text: purchaseUom + ' @ ' + factor + baseUom"></td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -164,49 +165,32 @@
     var model;
 
     function loadData(data) {
-        if (typeof data.coreListData != 'undefined') {
-            model.allItems(data.coreListData);
-        }
-
         if (typeof data.filteredListData != 'undefined') {
             model.items(data.filteredListData);
         }
 
-        model.trades(data.trades);
-
-        if (typeof data.subCategories !== 'undefined')
-        {
+        if (typeof data.subCategories !== 'undefined') {
             model.subCategories(data.subCategories);
         }
 
-        if (typeof data.types !== 'undefined')
-        {
+        if (typeof data.types !== 'undefined') {
             model.types(data.types);
         }
 
-        if (typeof data.projectDimensions !== 'undefined')
-        {            
+        if (typeof data.projectDimensions !== 'undefined') {
             model.projectDimensions(data.projectDimensions);
         }
 
         toastr.clear();
-
-        showLoadingSaved();
-
-        google.script.run.withSuccessHandler(loadSavedItems).getSavedItems(projectSsid);
     }
 
-    function loadSavedItems(data)
-    {
-        for (var i = 0; i < model.allItems().length; i++)
-        {
-            var itemsSaved = $.grep(data, function(el)
-            {
+    function loadSavedItems(savedItems) {
+        for (var i = 0; i < model.allItems().length; i++) {
+            var itemsSaved = $.grep(savedItems, function (el) {
                 return el.itemCode === model.allItems()[i].itemCode;
             });
 
-            if (itemsSaved.length > 0)
-            {
+            if (itemsSaved.length > 0) {
                 var savedItem = model.allItems()[i];
                 savedItem.quantity = itemsSaved[0].quantity;
                 savedItem.pdc = itemsSaved[0].pdc;
@@ -214,22 +198,18 @@
             }
         }
 
-        toastr.clear();        
+        toastr.clear();
     }
 
-    function showLoading()
-    {
+    function showLoading() {
         toastr.warning('Please wait while Core List items load', 'Loading...', { timeOut: 0, tapToDismiss: false, positionClass: 'toast-top-full-width' });
     }
 
-    function showLoadingSaved()
-    {
+    function showLoadingSaved() {
         toastr.warning('Please wait while your saved Core List items load', 'Loading...', { timeOut: 0, tapToDismiss: false, positionClass: 'toast-top-full-width' });
     }
 
     $(function () {
-        console.log('CoreList data coming...');
-
         model = {
             items: ko.observableArray([]),
             allItems: ko.observableArray([]),
@@ -245,9 +225,21 @@
             savedItems: ko.observableArray([])
         };
 
+        var trades = JSON.parse('<?=data.trades?>');
+
+        model.trades(trades);
+
+        var coreListData = JSON.parse('<?=data.coreListData?>');
+
+        model.allItems(coreListData);
+
+        var savedCoreListData = JSON.parse('<?=data.savedCoreListData?>');
+
+        loadSavedItems(savedCoreListData);
+
+
         model.selectedTrade.subscribe(function (newValue) {
-            if (typeof newValue !== "undefined" && newValue !== '')
-            {
+            if (typeof newValue !== "undefined" && newValue !== '') {
                 var filter = {
                     trade: newValue
                 };
@@ -258,10 +250,8 @@
             }
         });
 
-        model.selectedSubCategory.subscribe(function(newValue)
-        {
-            if (typeof newValue !== 'undefined' && newValue !== '')
-            {
+        model.selectedSubCategory.subscribe(function (newValue) {
+            if (typeof newValue !== 'undefined' && newValue !== '') {
                 var filter = {
                     trade: model.selectedTrade(),
                     category: newValue
@@ -273,8 +263,7 @@
             }
         });
 
-        model.selectedType.subscribe(function(newValue)
-        {
+        model.selectedType.subscribe(function (newValue) {
             if (typeof newValue !== 'undefined' && newValue !== '') {
                 var filter = {
                     trade: model.selectedTrade(),
@@ -289,9 +278,5 @@
         });
 
         ko.applyBindings(model);
-
-        showLoading();
-
-        google.script.run.withSuccessHandler(loadData).getCoreListData();        
     });
 </script>

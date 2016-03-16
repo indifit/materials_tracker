@@ -115,14 +115,14 @@
                 function PageSelector(request) {
                     var _this = this;
                     this.lookupProjectFromHash = function () {
-                        var hashLookupSsid = jw.MaterialsTracker.Config.ConfigurationManager.getSetting(jw.MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
+                        var hashLookupSsid = MaterialsTracker.Config.ConfigurationManager.getSetting(MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
 
                         //Open the spreadsheet using the ssid
                         var hashLookupSs = SpreadsheetApp.openById(hashLookupSsid);
 
                         var sheet = hashLookupSs.getSheets()[0];
 
-                        var range = sheet.getRange(2, 1, sheet.getLastColumn(), sheet.getLastRow());
+                        var range = sheet.getRange(2, 1, sheet.getLastRow(), sheet.getLastColumn());
 
                         var projHashRow = RangeUtilties.findFirstRowMatchingKey(range, _this.projectHash);
 
@@ -178,17 +178,45 @@
 
                         var data = _this[getDataMethodName](projectLookupResponse);
 
-                        data.projectHash = _this.projectHash;
-
                         return {
                             templateName: templateName,
                             data: data
                         };
                     };
                     this.getIndexPageData = function (projectData) {
-                        var data = {};
+                        var data = {
+                            projectData: projectData,
+                            coreListData: null,
+                            savedCoreListData: null,
+                            trades: null
+                        };
 
-                        data['projectData'] = projectData;
+                        var dataFetcher = new DataFetcher();
+
+                        var coreListData = dataFetcher.getCoreListItems();
+
+                        var rangeUtils = new RangeUtilties(coreListData);
+
+                        var coreListDataObjectArray = rangeUtils.convertToObjectArray();
+
+                        var savedCoreListDataObjectArray = dataFetcher.getSavedCoreListItems(projectData.projectSsid);
+
+                        var trades = [];
+
+                        //Get the trades from the core list
+                        coreListDataObjectArray.forEach(function (value) {
+                            if (trades.indexOf(value.trade.toString().trim()) === -1) {
+                                trades.push(value.trade.toString().trim());
+                            }
+                        });
+
+                        data.projectData = projectData;
+
+                        data.coreListData = JSON.stringify(coreListDataObjectArray);
+
+                        data.savedCoreListData = JSON.stringify(savedCoreListDataObjectArray);
+
+                        data.trades = JSON.stringify(trades);
 
                         return data;
                     };
@@ -198,6 +226,104 @@
                 return PageSelector;
             })();
             Utilities.PageSelector = PageSelector;
+
+            var DataFetcher = (function () {
+                function DataFetcher() {
+                    var _this = this;
+                    this.getCoreListItems = function () {
+                        var lastRow = DataFetcher.coreListSheet.getLastRow();
+
+                        var lastColumn = DataFetcher.coreListSheet.getLastColumn();
+
+                        var coreListRange = DataFetcher.coreListSheet.getRange(1, 1, lastRow, lastColumn);
+
+                        return coreListRange.getValues();
+                    };
+                    this.getFilteredCoreListItems = function (filter) {
+                        var coreListItems = _this.getCoreListItems();
+
+                        var headerRow = coreListItems[0];
+
+                        var filteredItems = coreListItems;
+
+                        if (typeof filter != 'undefined' && filter != null) {
+                            if (typeof filter.trade != 'undefined') {
+                                filteredItems = RangeUtilties.findRowsMatchingKey(filteredItems, filter.trade, 0, headerRow);
+                            }
+
+                            if (typeof filter.category != 'undefined') {
+                                filteredItems = RangeUtilties.findRowsMatchingKey(filteredItems, filter.category, 3, headerRow);
+                            }
+
+                            if (typeof filter.type != 'undefined') {
+                                filteredItems = RangeUtilties.findRowsMatchingKey(filteredItems, filter.type, 4, headerRow);
+                            }
+                        }
+
+                        //Retrieve the valid project dimensions for the filtered items
+                        var allpdcsSheet = DataFetcher.centralPurchasingSs.getSheetByName('PDCs');
+
+                        var allpdcsRange = allpdcsSheet.getRange(2, 1, allpdcsSheet.getLastRow(), allpdcsSheet.getLastColumn());
+
+                        var rangeUtils = new RangeUtilties(filteredItems);
+
+                        var filteredItemsObjectArray = rangeUtils.convertToObjectArray();
+
+                        filteredItemsObjectArray.forEach(function (value) {
+                            var pdcString = value.pdc;
+
+                            //Get the pdc codes for this item
+                            var pdcArray = pdcString.split(';');
+
+                            value.pdcs = [];
+
+                            pdcArray.forEach(function (pdcCode) {
+                                var row = RangeUtilties.findFirstRowMatchingKey(allpdcsRange, pdcCode);
+
+                                if (row != null) {
+                                    value.pdcs.push({ code: pdcCode, description: row[1].toString() });
+                                }
+                            });
+                        });
+
+                        return filteredItemsObjectArray;
+                    };
+                    this.getSavedCoreListItems = function (projectSsid) {
+                        var projectSs = SpreadsheetApp.openById(projectSsid);
+
+                        var materialsTrackingSheet = projectSs.getSheetByName('Materials Tracking');
+
+                        var savedItemsRange = materialsTrackingSheet.getRange(2, 1, materialsTrackingSheet.getLastRow(), materialsTrackingSheet.getLastColumn());
+
+                        var savedItemsValues = savedItemsRange.getValues();
+
+                        var rangeUtils = new RangeUtilties(savedItemsValues);
+
+                        var savedItems = rangeUtils.convertToObjectArray();
+
+                        var ret = [];
+
+                        for (var i = 0; i < savedItems.length; i++) {
+                            if (savedItems[i].itemCode !== '') {
+                                ret.push({
+                                    itemCode: savedItems[i].itemCode.toString(),
+                                    pdc: savedItems[i].pdCode.toString(),
+                                    quantity: parseInt(savedItems[i].qty.toString())
+                                });
+                            }
+                        }
+
+                        return ret;
+                    };
+                }
+                DataFetcher.centralPurchasingSsid = MaterialsTracker.Config.ConfigurationManager.getSetting('CentralPurchasingSSID');
+
+                DataFetcher.centralPurchasingSs = SpreadsheetApp.openById(DataFetcher.centralPurchasingSsid);
+
+                DataFetcher.coreListSheet = DataFetcher.centralPurchasingSs.getSheetByName('CoreList');
+                return DataFetcher;
+            })();
+            Utilities.DataFetcher = DataFetcher;
         })(MaterialsTracker.Utilities || (MaterialsTracker.Utilities = {}));
         var Utilities = MaterialsTracker.Utilities;
     })(jw.MaterialsTracker || (jw.MaterialsTracker = {}));

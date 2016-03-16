@@ -27,10 +27,8 @@
     }
 
     export interface ICoreListData
-    {
-        coreListData: Object[];
+    {        
         filteredListData?: Object[];
-        trades?: string[];
         subCategories?: string[];
         types?: string[];
     }    

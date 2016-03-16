@@ -153,21 +153,21 @@
             this.projectHash = request.parameter['projectHash'];
         }
 
-        lookupProjectFromHash = (): jw.MaterialsTracker.Interfaces.IProjectHashLookupResponse => {
-            var hashLookupSsid: string = jw.MaterialsTracker.Config.ConfigurationManager.getSetting(jw.MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
+        lookupProjectFromHash = (): MaterialsTracker.Interfaces.IProjectHashLookupResponse => {
+            var hashLookupSsid: string = MaterialsTracker.Config.ConfigurationManager.getSetting(MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
 
             //Open the spreadsheet using the ssid
             var hashLookupSs: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(hashLookupSsid);
 
             var sheet: GoogleAppsScript.Spreadsheet.Sheet = hashLookupSs.getSheets()[0];
 
-            var range: GoogleAppsScript.Spreadsheet.Range = sheet.getRange(2, 1, sheet.getLastColumn(), sheet.getLastRow());
+            var range: GoogleAppsScript.Spreadsheet.Range = sheet.getRange(2, 1, sheet.getLastRow(), sheet.getLastColumn());
 
             var projHashRow: Object[] = RangeUtilties.findFirstRowMatchingKey(range, this.projectHash);
 
             if (projHashRow != null)
             {
-                var response: jw.MaterialsTracker.Interfaces.IProjectHashLookupResponse = {
+                var response: MaterialsTracker.Interfaces.IProjectHashLookupResponse = {
                     projectNumber: parseInt(projHashRow[1].toString()),
                     urlHash: projHashRow[0].toString(),
                     projectName: projHashRow[2].toString(),
@@ -182,7 +182,7 @@
         };
 
 
-        getPage = (): jw.MaterialsTracker.Interfaces.IPage =>
+        getPage = (): MaterialsTracker.Interfaces.IPage =>
         {           
             if (typeof this.projectHash == 'undefined')
             {
@@ -192,7 +192,7 @@
                 };
             }
 
-            var projectLookupResponse: jw.MaterialsTracker.Interfaces.IProjectHashLookupResponse = this.lookupProjectFromHash();            
+            var projectLookupResponse: MaterialsTracker.Interfaces.IProjectHashLookupResponse = this.lookupProjectFromHash();            
 
             if (projectLookupResponse == null)
             {
@@ -225,8 +225,6 @@
 
             var data: any = this[getDataMethodName](projectLookupResponse);
 
-            data.projectHash = this.projectHash;
-
             return {
                 templateName: templateName,
                 data: data
@@ -235,11 +233,144 @@
         
         getIndexPageData = (projectData: MaterialsTracker.Interfaces.IProjectHashLookupResponse): Object =>
         {
-            var data: any = {};
+            var data: any = {
+                projectData: projectData,
+                coreListData: null,
+                savedCoreListData: null,
+                trades: null
+            };
 
-            data['projectData'] = projectData;                                                   
+            var dataFetcher: DataFetcher = new DataFetcher();
+
+            var coreListData: Object[][] = dataFetcher.getCoreListItems();
+
+            var rangeUtils: RangeUtilties = new RangeUtilties(coreListData);
+
+            var coreListDataObjectArray: Object[] = rangeUtils.convertToObjectArray();
+
+            var savedCoreListDataObjectArray: Object[] = dataFetcher.getSavedCoreListItems(projectData.projectSsid);
+
+            var trades: string[] = [];
+
+            //Get the trades from the core list
+            coreListDataObjectArray.forEach((value: any): void => {
+                if (trades.indexOf(value.trade.toString().trim()) === -1) {
+                    trades.push(value.trade.toString().trim());
+                }
+            });
+
+            data.projectData = projectData;
+
+            data.coreListData = JSON.stringify(coreListDataObjectArray);            
+
+            data.savedCoreListData = JSON.stringify(savedCoreListDataObjectArray);
+
+            data.trades = JSON.stringify(trades);
 
             return data;
         }
     }   
+
+    export class DataFetcher
+    {
+        private static centralPurchasingSsid: string = MaterialsTracker.Config.ConfigurationManager.getSetting('CentralPurchasingSSID');
+
+        private static centralPurchasingSs: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(DataFetcher.centralPurchasingSsid);
+
+        private static coreListSheet = DataFetcher.centralPurchasingSs.getSheetByName('CoreList');
+
+        public getCoreListItems = (): Object[][] =>
+        {
+            var lastRow: number = DataFetcher.coreListSheet.getLastRow();
+
+            var lastColumn: number = DataFetcher.coreListSheet.getLastColumn();
+
+            var coreListRange: GoogleAppsScript.Spreadsheet.Range = DataFetcher.coreListSheet.getRange(1, 1, lastRow, lastColumn);
+
+            return coreListRange.getValues();
+        };
+
+        public getFilteredCoreListItems = (filter: MaterialsTracker.Interfaces.ICoreListFilter): Object[] =>
+        {
+            var coreListItems: Object[][] = this.getCoreListItems();
+
+            var headerRow: Object[] = coreListItems[0];
+
+            var filteredItems: Object[][] = coreListItems;
+
+            if(typeof filter != 'undefined' && filter != null){
+                if(typeof filter.trade != 'undefined'){
+                    filteredItems = RangeUtilties.findRowsMatchingKey(filteredItems, filter.trade, 0, headerRow);
+                }
+
+                if (typeof filter.category != 'undefined')
+                {
+                    filteredItems = RangeUtilties.findRowsMatchingKey(filteredItems, filter.category, 3, headerRow);
+                }
+
+                if (typeof filter.type != 'undefined')
+                {
+                    filteredItems = RangeUtilties.findRowsMatchingKey(filteredItems, filter.type, 4, headerRow);
+                }
+            }
+
+            //Retrieve the valid project dimensions for the filtered items
+            var allpdcsSheet = DataFetcher.centralPurchasingSs.getSheetByName('PDCs');
+
+            var allpdcsRange = allpdcsSheet.getRange(2, 1, allpdcsSheet.getLastRow(), allpdcsSheet.getLastColumn());
+
+            var rangeUtils = new RangeUtilties(filteredItems);
+
+            var filteredItemsObjectArray: Object[] = rangeUtils.convertToObjectArray();
+
+            filteredItemsObjectArray.forEach((value: any): void => {
+                var pdcString = value.pdc;
+
+                //Get the pdc codes for this item
+                var pdcArray = pdcString.split(';');
+
+                value.pdcs = [];
+
+                pdcArray.forEach((pdcCode: any): void => {
+                    var row: Object[] = RangeUtilties.findFirstRowMatchingKey(allpdcsRange, pdcCode);
+
+                    if (row != null) {
+                        value.pdcs.push({ code: pdcCode, description: row[1].toString() });
+                    }
+                });
+            });
+
+
+            return filteredItemsObjectArray;
+        };  
+        
+        public getSavedCoreListItems = (projectSsid: string): Object[] =>
+        {            
+            var projectSs: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(projectSsid);
+
+            var materialsTrackingSheet: GoogleAppsScript.Spreadsheet.Sheet = projectSs.getSheetByName('Materials Tracking');
+
+            var savedItemsRange: GoogleAppsScript.Spreadsheet.Range = materialsTrackingSheet.getRange(2, 1, materialsTrackingSheet.getLastRow(), materialsTrackingSheet.getLastColumn());
+
+            var savedItemsValues = savedItemsRange.getValues();
+
+            var rangeUtils = new RangeUtilties(savedItemsValues);
+
+            var savedItems: any[] = rangeUtils.convertToObjectArray();
+
+            var ret: MaterialsTracker.Interfaces.ISavedItem[] = [];
+
+            for (var i = 0; i < savedItems.length; i++) {
+                if (savedItems[i].itemCode !== '') {
+                    ret.push({
+                        itemCode: savedItems[i].itemCode.toString(),
+                        pdc: savedItems[i].pdCode.toString(),
+                        quantity: parseInt(savedItems[i].qty.toString())
+                    });
+                }
+            }
+
+            return ret;                
+        };   
+    }
 }

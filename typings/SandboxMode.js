@@ -1,4 +1,4 @@
-var GoogleAppsScript;
+﻿var GoogleAppsScript;
 (function (GoogleAppsScript) {
     // ReSharper disable once InconsistentNaming
     (function (HTML) {

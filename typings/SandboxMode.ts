@@ -7,8 +7,8 @@ module GoogleAppsScript.HTML
 
     export class SandboxMode
     {        
-        static EMULATED: ISandboxModeType; 
-        static IFRAME: ISandboxModeType;
-        static NATIVE: ISandboxModeType;
+        EMULATED: ISandboxModeType; 
+        IFRAME: ISandboxModeType;
+        NATIVE: ISandboxModeType;
     }
 }
