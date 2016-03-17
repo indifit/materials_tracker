@@ -241,27 +241,32 @@
             };
 
             var dataFetcher: DataFetcher = new DataFetcher();
-
-            var coreListData: Object[][] = dataFetcher.getCoreListItems();
-
-            var rangeUtils: RangeUtilties = new RangeUtilties(coreListData);
-
-            var coreListDataObjectArray: Object[] = rangeUtils.convertToObjectArray();
+            
+            var filteredCoreListData: Object[] = dataFetcher.getFilteredCoreListItems(null);
 
             var savedCoreListDataObjectArray: Object[] = dataFetcher.getSavedCoreListItems(projectData.projectSsid);
 
             var trades: string[] = [];
 
-            //Get the trades from the core list
-            coreListDataObjectArray.forEach((value: any): void => {
-                if (trades.indexOf(value.trade.toString().trim()) === -1) {
-                    trades.push(value.trade.toString().trim());
+            //Get the trades from the core list and determine which items are saved
+            filteredCoreListData.forEach((coreListItem: any): void => {
+                if (trades.indexOf(coreListItem.trade.toString().trim()) === -1) {
+                    trades.push(coreListItem.trade.toString().trim());
                 }
+
+                var savedItemsOfThisType: any[] = savedCoreListDataObjectArray.filter((savedItem: any) : boolean =>
+                {
+                    return coreListItem.itemCode === savedItem.itemCode;
+                });
+
+                coreListItem.isSaved = savedItemsOfThisType.length > 0;
+
+                coreListItem.quantity = savedItemsOfThisType.length > 0 ? savedItemsOfThisType[0].quantity : null;
             });
 
             data.projectData = projectData;
 
-            data.coreListData = JSON.stringify(coreListDataObjectArray);            
+            data.coreListData = JSON.stringify(filteredCoreListData);            
 
             data.savedCoreListData = JSON.stringify(savedCoreListDataObjectArray);
 

@@ -66,7 +66,7 @@
                                     <th>
                                         Project Dimension
                                     </th>
-                                    <th>
+                                    <th style="text-align: right">
                                         Quantity Required
                                     </th>
                                     <th>&nbsp;</th>
@@ -80,17 +80,17 @@
                                 </tr>
                             </tbody>
                             <tbody data-bind="foreach: items">
-                                <tr>
+                                <tr data-bind="css: rowClass">
                                     <td data-bind="text: itemCode"></td>
                                     <td data-bind="text: itemDescription"></td>
                                     <td data-bind="text: manufacturer"></td>
                                     <td data-bind="text: brand"></td>
                                     <td data-bind="text: partNumber"></td>
                                     <td>
-                                        <select class="form-control" data-bind="options: pdcs, optionsText: function(item){ return item.code + ' ('  + item.description + ')'}, "></select>
+                                        <select class="form-control" data-bind="options: pdcs, optionsValue: function(item){return item.code}, value: pdc, optionsText: function(item){ return item.code + ' ('  + item.description + ')'}, "></select>
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control input-sm pull-right" style="width: 45px;" />
+                                        <input type="text" class="form-control pull-right quantity" style="width: 45px;" data-bind="value: quantity" />
                                     </td>
                                     <td data-bind="text: purchaseUom + ' @ ' + factor + baseUom"></td>
                                 </tr>
@@ -140,7 +140,7 @@
                                 </tr>
                             </tbody>
                             <tbody data-bind="foreach: savedItems">
-                                <tr>
+                                <tr data-bind="css: rowClass">
                                     <td data-bind="text: itemCode"></td>
                                     <td data-bind="text: itemDescription"></td>
                                     <td data-bind="text: manufacturer"></td>
@@ -159,30 +159,10 @@
     </div>
 </body>
 </html>
-<?!=HtmlService.createHtmlOutputFromFile('JavaScript').getContent();?>
+<?!=HtmlService.createTemplateFromFile('JavaScript').evaluate().getContent();?>
 
 <script language="javascript" type="text/javascript">
     var model;
-
-    function loadData(data) {
-        if (typeof data.filteredListData != 'undefined') {
-            model.items(data.filteredListData);
-        }
-
-        if (typeof data.subCategories !== 'undefined') {
-            model.subCategories(data.subCategories);
-        }
-
-        if (typeof data.types !== 'undefined') {
-            model.types(data.types);
-        }
-
-        if (typeof data.projectDimensions !== 'undefined') {
-            model.projectDimensions(data.projectDimensions);
-        }
-
-        toastr.clear();
-    }
 
     function loadSavedItems(savedItems) {
         for (var i = 0; i < model.allItems().length; i++) {
@@ -192,8 +172,9 @@
 
             if (itemsSaved.length > 0) {
                 var savedItem = model.allItems()[i];
-                savedItem.quantity = itemsSaved[0].quantity;
-                savedItem.pdc = itemsSaved[0].pdc;
+                savedItem.quantity = ko.observable(ko.utils.unwrapObservable(itemsSaved[0].quantity));
+                savedItem.originalQuantity = ko.observable(ko.utils.unwrapObservable(itemsSaved[0].quantity));
+                savedItem.pdc = ko.observable(ko.utils.unwrapObservable(itemsSaved[0].pdc));
                 model.savedItems.push(savedItem);
             }
         }
@@ -201,15 +182,122 @@
         toastr.clear();
     }
 
-    function showLoading() {
-        toastr.warning('Please wait while Core List items load', 'Loading...', { timeOut: 0, tapToDismiss: false, positionClass: 'toast-top-full-width' });
+    function filterItems(coreListData, trade, category, type)
+    {
+        var coreListDataParam = new jw.MaterialsTracker.Client.CoreListData(coreListData);
+
+        var filterer = new jw.MaterialsTracker.Client.CoreListFilter(coreListDataParam);
+
+        var filter = new jw.MaterialsTracker.Client.Filter();
+
+        if (typeof trade != 'undefined')
+        {
+            filter.trade = trade;
+        }
+
+        if (typeof category != 'undefined')
+        {
+            filter.category = category;
+        }
+
+        if (typeof type != 'undefined')
+        {
+            filter.type = type;
+        }
+
+        var filteredData = filterer.filterCoreList(filter);
+
+        model.items(filteredData.listData);
+
+        model.subCategories(filteredData.subCategories);
+
+        model.types(filteredData.types);
     }
 
-    function showLoadingSaved() {
-        toastr.warning('Please wait while your saved Core List items load', 'Loading...', { timeOut: 0, tapToDismiss: false, positionClass: 'toast-top-full-width' });
-    }
 
-    $(function () {
+    $(function ()
+    {
+        $('table').on('keyup', '.quantity', function(event)
+        {
+            var item = ko.dataFor(this);
+
+            if (event.keyCode === 13)
+            {
+                var itemCode = item.itemCode;
+
+                var savedItemsOfType = $.grep(model.savedItems(), function(el)
+                {
+                    return el.itemCode === itemCode;
+                });
+
+                if (savedItemsOfType.length > 0)
+                {
+                    for (var i = 0; i < model.savedItems().length; i++)
+                    {
+                        if (model.savedItems()[i].itemCode === itemCode)
+                        {
+                            model.savedItems()[i].quantity(ko.utils.unwrapObservable(item.quantity));
+
+                            model.savedItems()[i].pdc(ko.utils.unwrapObservable(item.pdc));
+
+                            var q = ko.utils.unwrapObservable(item.quantity);
+
+                            //Removing an item from the basket
+                            if (q === '' || ($.isNumeric(q) && parseInt(q) === 0))
+                            {
+                                if (model.savedItems()[i].isSaved())
+                                {
+                                    //If it was saved then flag it as removed
+                                    model.savedItems()[i].isRemoved(true);
+                                } else
+                                {
+                                    //Otherwise just remove it from the savedItems observable
+                                    model.savedItems.remove(function(item)
+                                    {
+                                        return item.itemCode === itemCode;
+                                    });
+
+                                    //Remove all flags from the original item
+                                    item.isSaved(false);
+                                    item.isAdded(false);
+                                    item.isRemoved(false);
+                                }                                                                
+                            } else if(q !== '' && ($.isNumeric(q) &&  parseInt(q) > 0))
+                            {
+                                //Changing an item in the basket, but not removing it
+                                if (model.savedItems()[i].isSaved())
+                                {
+                                    //If the quantity is different from that saved then flag it as isAdded (dirty)
+                                    if (parseInt(model.savedItems()[i].originalQuantity()) !== parseInt(q))
+                                    {
+                                        model.savedItems()[i].isAdded(true);
+                                    } else
+                                    {
+                                        model.savedItems()[i].isAdded(false);
+                                        model.savedItems()[i].isRemoved(false);
+                                    }
+                                }                                
+                            }
+
+                            break;
+                        }
+                    }
+                } else
+                {
+                    item.quantity = ko.observable(ko.utils.unwrapObservable(item.quantity));
+
+                    item.pdc = ko.observable(ko.utils.unwrapObservable(item.pdc));
+
+                    if (item.quantity() !== '' && item.quantity() > 0)
+                    {
+                        item.isAdded(true);
+                    }                    
+
+                    model.savedItems.push(item);
+                }
+            }
+        });
+
         model = {
             items: ko.observableArray([]),
             allItems: ko.observableArray([]),
@@ -222,7 +310,7 @@
             selectedSubCategory: ko.observable(''),
             selectedType: ko.observable(''),
             selectedProjectDimension: ko.observable(),
-            savedItems: ko.observableArray([])
+            savedItems: ko.observableArray([])            
         };
 
         var trades = JSON.parse('<?=data.trades?>');
@@ -231,50 +319,52 @@
 
         var coreListData = JSON.parse('<?=data.coreListData?>');
 
+        for (var i = 0; i < coreListData.length; i++)
+        {
+            coreListData[i].pdc = ko.observable(coreListData[i].pdc);
+            coreListData[i].isSaved = ko.observable(coreListData[i].isSaved);
+            coreListData[i].isAdded = ko.observable(false);
+            coreListData[i].isRemoved = ko.observable(false);
+            coreListData[i].rowClass = ko.computed(function ()
+            {
+                if (this.isAdded())
+                {
+                    return 'warning';
+                }
+                if (this.isRemoved())
+                {
+                    return 'danger';
+                }
+                if (this.isSaved())
+                {
+                    return 'success';
+                }
+            }, coreListData[i]);
+        }
+
         model.allItems(coreListData);
+
+        model.items(coreListData);
 
         var savedCoreListData = JSON.parse('<?=data.savedCoreListData?>');
 
         loadSavedItems(savedCoreListData);
 
+        filterItems(coreListData);
+        
 
-        model.selectedTrade.subscribe(function (newValue) {
-            if (typeof newValue !== "undefined" && newValue !== '') {
-                var filter = {
-                    trade: newValue
-                };
-
-                showLoading();
-
-                google.script.run.withSuccessHandler(loadData).getCoreListData(filter);
-            }
+        model.selectedTrade.subscribe(function (newValue)
+        {
+            filterItems(coreListData, newValue);
         });
 
         model.selectedSubCategory.subscribe(function (newValue) {
-            if (typeof newValue !== 'undefined' && newValue !== '') {
-                var filter = {
-                    trade: model.selectedTrade(),
-                    category: newValue
-                };
-
-                showLoading();
-
-                google.script.run.withSuccessHandler(loadData).getCoreListData(filter);
-            }
+            filterItems(coreListData, model.selectedTrade(), newValue);            
         });
 
-        model.selectedType.subscribe(function (newValue) {
-            if (typeof newValue !== 'undefined' && newValue !== '') {
-                var filter = {
-                    trade: model.selectedTrade(),
-                    category: model.selectedSubCategory(),
-                    type: newValue
-                };
-
-                showLoading();
-
-                google.script.run.withSuccessHandler(loadData).getCoreListData(filter);
-            }
+        model.selectedType.subscribe(function (newValue)
+        {
+            filterItems(coreListData, model.selectedTrade(), model.selectedSubCategory(), newValue);            
         });
 
         ko.applyBindings(model);

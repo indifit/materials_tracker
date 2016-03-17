@@ -193,26 +193,30 @@
 
                         var dataFetcher = new DataFetcher();
 
-                        var coreListData = dataFetcher.getCoreListItems();
-
-                        var rangeUtils = new RangeUtilties(coreListData);
-
-                        var coreListDataObjectArray = rangeUtils.convertToObjectArray();
+                        var filteredCoreListData = dataFetcher.getFilteredCoreListItems(null);
 
                         var savedCoreListDataObjectArray = dataFetcher.getSavedCoreListItems(projectData.projectSsid);
 
                         var trades = [];
 
-                        //Get the trades from the core list
-                        coreListDataObjectArray.forEach(function (value) {
-                            if (trades.indexOf(value.trade.toString().trim()) === -1) {
-                                trades.push(value.trade.toString().trim());
+                        //Get the trades from the core list and determine which items are saved
+                        filteredCoreListData.forEach(function (coreListItem) {
+                            if (trades.indexOf(coreListItem.trade.toString().trim()) === -1) {
+                                trades.push(coreListItem.trade.toString().trim());
                             }
+
+                            var savedItemsOfThisType = savedCoreListDataObjectArray.filter(function (savedItem) {
+                                return coreListItem.itemCode === savedItem.itemCode;
+                            });
+
+                            coreListItem.isSaved = savedItemsOfThisType.length > 0;
+
+                            coreListItem.quantity = savedItemsOfThisType.length > 0 ? savedItemsOfThisType[0].quantity : null;
                         });
 
                         data.projectData = projectData;
 
-                        data.coreListData = JSON.stringify(coreListDataObjectArray);
+                        data.coreListData = JSON.stringify(filteredCoreListData);
 
                         data.savedCoreListData = JSON.stringify(savedCoreListDataObjectArray);
 

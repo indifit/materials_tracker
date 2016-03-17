@@ -28,7 +28,7 @@
 
     export interface ICoreListData
     {        
-        filteredListData?: Object[];
+        listData?: any[];
         subCategories?: string[];
         types?: string[];
     }    
