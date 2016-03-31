@@ -44,7 +44,7 @@
 
         convertToObjectArray = (): Object[] =>
         {
-            var ret: Object[] = [];
+            var ret: any = []; 
 
             //Read the first row of the range as the properties for the object
             var propertyNames: string[] = [];

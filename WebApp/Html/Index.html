@@ -44,47 +44,41 @@
                 </div>
 
                 <div class="row">
+                    <table class="table table-hover" id="itemPickerTableHeader">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Item Code
+                                </th>
+                                <th>
+                                    Item Description
+                                </th>
+                                <th>
+                                    Part Number
+                                </th>
+                                <th>
+                                    Project Dimension
+                                </th>
+                                <th style="text-align: right">
+                                    Quantity Required
+                                </th>
+                                <th>&nbsp;</th>
+                            </tr>
+                        </thead>
+                    </table>
                     <div class="long-list-wrapper">
                         <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        Item Code
-                                    </th>
-                                    <th>
-                                        Item Description
-                                    </th>
-                                    <th>
-                                        Manufacturer
-                                    </th>
-                                    <th>
-                                        Brand
-                                    </th>
-                                    <th>
-                                        Part Number
-                                    </th>
-                                    <th>
-                                        Project Dimension
-                                    </th>
-                                    <th style="text-align: right">
-                                        Quantity Required
-                                    </th>
-                                    <th>&nbsp;</th>
-                                </tr>
-                            </thead>
                             <tbody data-bind="if: typeof items == 'undefined' || items == null || items().length == 0">
-                                <tr class="info">
-                                    <td colspan="8">
-                                        No Core List items have been loaded yet.
-                                    </td>
-                                </tr>
+                            <tr class="info">
+                                <td colspan="8">
+                                    No Core List items have been loaded yet.
+                                </td>
+                            </tr>
                             </tbody>
-                            <tbody data-bind="foreach: items">
+                            <tbody data-bind="foreach: items, colWidthCalculate: items" id="itemPickerTableBody">
                                 <tr data-bind="css: rowClass">
                                     <td data-bind="text: itemCode"></td>
-                                    <td data-bind="text: itemDescription"></td>
-                                    <td data-bind="text: manufacturer"></td>
-                                    <td data-bind="text: brand"></td>
+                                    <td data-bind="text: itemDescription + (manufacturer.length > 0 ? ' [' + manufacturer + ']' : '') + (brand.length > 0 ? ' [' + brand + ']' : '')"></td>
                                     <td data-bind="text: partNumber"></td>
                                     <td>
                                         <select class="form-control" data-bind="options: pdcs, optionsValue: function(item){return item.code}, value: pdc, optionsText: function(item){ return item.code + ' ('  + item.description + ')'}, "></select>
@@ -104,47 +98,41 @@
                     </div>
                 </div>
                 <div class="row">
+                    <table class="table table-hover" id="basketTableHeader">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Item Code
+                                </th>
+                                <th>
+                                    Item Description
+                                </th>                                
+                                <th>
+                                    Part Number
+                                </th>
+                                <th>
+                                    Project Dimension
+                                </th>
+                                <th>
+                                    Quantity Required
+                                </th>
+                                <th>&nbsp;</th>
+                            </tr>
+                        </thead>
+                    </table>
                     <div class="long-list-wrapper">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        Item Code
-                                    </th>
-                                    <th>
-                                        Item Description
-                                    </th>
-                                    <th>
-                                        Manufacturer
-                                    </th>
-                                    <th>
-                                        Brand
-                                    </th>
-                                    <th>
-                                        Part Number
-                                    </th>
-                                    <th>
-                                        Project Dimension
-                                    </th>
-                                    <th>
-                                        Quantity Required
-                                    </th>
-                                    <th>&nbsp;</th>
-                                </tr>
-                            </thead>
-                            <tbody data-bind="if: typeof savedItems == 'undefined' || savedItems == null || savedItems().length == 0">
+                        <table class="table table-hover" id="basketTableBody">
+                            <tbody data-bind="if: typeof basketItems == 'undefined' || basketItems == null || basketItems().length == 0">
                                 <tr class="info">
                                     <td colspan="8">
-                                        No Core List items have been saved yet.
+                                        No Core List items have been added to the basket yet.
                                     </td>
                                 </tr>
                             </tbody>
-                            <tbody data-bind="foreach: savedItems">
+                            <tbody data-bind="foreach: basketItems, colWidthCalculate: basketItems">
                                 <tr data-bind="css: rowClass">
                                     <td data-bind="text: itemCode"></td>
-                                    <td data-bind="text: itemDescription"></td>
-                                    <td data-bind="text: manufacturer"></td>
-                                    <td data-bind="text: brand"></td>
+                                    <td data-bind="text: itemDescription + (manufacturer.length > 0 ? ' [' + manufacturer + ']' : '') + (brand.length > 0 ? ' [' + brand + ']' : '')"></td>
                                     <td data-bind="text: partNumber"></td>
                                     <td data-bind="text: pdc"></td>
                                     <td data-bind="text: quantity"></td>
@@ -177,9 +165,7 @@
                 savedItem.pdc = ko.observable(ko.utils.unwrapObservable(itemsSaved[0].pdc));
                 model.savedItems.push(savedItem);
             }
-        }
-
-        toastr.clear();
+        }        
     }
 
     function filterItems(coreListData, trade, category, type)
@@ -216,86 +202,87 @@
 
 
     $(function ()
-    {
-        $('table').on('keyup', '.quantity', function(event)
+    {        
+
+        $('table').on('blur', '.quantity', function(event)
         {
             var item = ko.dataFor(this);
+            
+            var itemCode = item.itemCode;
 
-            if (event.keyCode === 13)
-            {
-                var itemCode = item.itemCode;
+            var pdc = item.pdc;
 
-                var savedItemsOfType = $.grep(model.savedItems(), function(el)
+            var basketItemsOfType = $.grep(model.basketItems(), function (el)
                 {
                     return el.itemCode === itemCode;
                 });
 
-                if (savedItemsOfType.length > 0)
+            if (basketItemsOfType.length > 0)
+            {
+                for (var i = 0; i < model.basketItems().length; i++)
                 {
-                    for (var i = 0; i < model.savedItems().length; i++)
+                    if (model.basketItems()[i].itemCode === itemCode && model.basketItems()[i].pdc === pdc)
                     {
-                        if (model.savedItems()[i].itemCode === itemCode)
+                        model.basketItems()[i].quantity(ko.utils.unwrapObservable(item.quantity));
+
+                        model.basketItems()[i].pdc(ko.utils.unwrapObservable(item.pdc));
+
+                        var q = ko.utils.unwrapObservable(item.quantity);
+
+                        //Removing an item from the basket
+                        if (q === '' || ($.isNumeric(q) && parseInt(q) === 0))
                         {
-                            model.savedItems()[i].quantity(ko.utils.unwrapObservable(item.quantity));
-
-                            model.savedItems()[i].pdc(ko.utils.unwrapObservable(item.pdc));
-
-                            var q = ko.utils.unwrapObservable(item.quantity);
-
-                            //Removing an item from the basket
-                            if (q === '' || ($.isNumeric(q) && parseInt(q) === 0))
+                            if (model.basketItems()[i].isSaved())
                             {
-                                if (model.savedItems()[i].isSaved())
+                                //If it was saved then flag it as removed
+                                model.basketItems()[i].isRemoved(true);
+                            } else
+                            {
+                                //Otherwise just remove it from the basketItems observable
+                                model.basketItems.remove(function(item)
                                 {
-                                    //If it was saved then flag it as removed
-                                    model.savedItems()[i].isRemoved(true);
+                                    return item.itemCode === itemCode;
+                                });
+
+                                //Remove all flags from the original item
+                                item.isSaved(false);
+                                item.isAdded(false);
+                                item.isRemoved(false);
+                            }                                                                
+                        } else if(q !== '' && ($.isNumeric(q) &&  parseInt(q) > 0))
+                        {
+                            //Changing an item in the basket, but not removing it
+                            if (model.basketItems()[i].isSaved())
+                            {
+                                //If the quantity is different from that saved then flag it as isAdded (dirty)
+                                if (parseInt(model.basketItems()[i].originalQuantity()) !== parseInt(q))
+                                {
+                                    model.basketItems()[i].isAdded(true);
                                 } else
                                 {
-                                    //Otherwise just remove it from the savedItems observable
-                                    model.savedItems.remove(function(item)
-                                    {
-                                        return item.itemCode === itemCode;
-                                    });
-
-                                    //Remove all flags from the original item
-                                    item.isSaved(false);
-                                    item.isAdded(false);
-                                    item.isRemoved(false);
-                                }                                                                
-                            } else if(q !== '' && ($.isNumeric(q) &&  parseInt(q) > 0))
-                            {
-                                //Changing an item in the basket, but not removing it
-                                if (model.savedItems()[i].isSaved())
-                                {
-                                    //If the quantity is different from that saved then flag it as isAdded (dirty)
-                                    if (parseInt(model.savedItems()[i].originalQuantity()) !== parseInt(q))
-                                    {
-                                        model.savedItems()[i].isAdded(true);
-                                    } else
-                                    {
-                                        model.savedItems()[i].isAdded(false);
-                                        model.savedItems()[i].isRemoved(false);
-                                    }
-                                }                                
-                            }
-
-                            break;
+                                    model.basketItems()[i].isAdded(false);
+                                    model.basketItems()[i].isRemoved(false);
+                                }
+                            }                                
                         }
+
+                        break;
                     }
-                } else
-                {
-                    item.quantity = ko.observable(ko.utils.unwrapObservable(item.quantity));
-
-                    item.pdc = ko.observable(ko.utils.unwrapObservable(item.pdc));
-
-                    if (item.quantity() !== '' && item.quantity() > 0)
-                    {
-                        item.isAdded(true);
-                    }                    
-
-                    model.savedItems.push(item);
                 }
             }
+            else
+            {
+                item.quantity = ko.observable(ko.utils.unwrapObservable(item.quantity));
+
+                item.pdc = ko.observable(ko.utils.unwrapObservable(item.pdc));
+
+                if (item.quantity() !== '' && item.quantity() > 0)
+                {
+                    item.isAdded(true);
+                }                    
+
+                model.basketItems.push(item);
+            }            
         });
 
         model = {
@@ -310,7 +297,8 @@
             selectedSubCategory: ko.observable(''),
             selectedType: ko.observable(''),
             selectedProjectDimension: ko.observable(),
-            savedItems: ko.observableArray([])            
+            savedItems: ko.observableArray([]),
+            basketItems: ko.observableArray([])
         };
 
         var trades = JSON.parse('<?=data.trades?>');
@@ -351,7 +339,24 @@
         loadSavedItems(savedCoreListData);
 
         filterItems(coreListData);
-        
+
+        ko.bindingHandlers.colWidthCalculate = {
+            update: function(element, valueAccessor, allBindings, viewModel, bindingContext) 
+            {
+                var data = ko.utils.unwrapObservable(valueAccessor());
+
+                $('#itemPickerTableBody tr:eq(0) td').each(function (i)
+                {
+                    var cellWidth = $(this).outerWidth();
+                    $('#itemPickerTableHeader tr:eq(0) th:eq(' + i + ')').css('width', cellWidth);
+                });
+
+                $('#basketTableBody tr:eq(0) td').each(function (i) {
+                    var cellWidth = $(this).outerWidth();
+                    $('#basketTableHeader tr:eq(0) th:eq(' + i + ')').css('width', cellWidth);
+                });
+            }
+        };
 
         model.selectedTrade.subscribe(function (newValue)
         {
