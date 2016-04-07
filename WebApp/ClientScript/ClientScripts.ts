@@ -117,3 +117,42 @@
         };
     }
 } 
+
+ko.utils.extendObservable = (target: Object, source: Object): void =>
+{
+    var prop: any, srcVal: any, isObservable: boolean = false;
+
+    for (prop in source) {
+
+        if (!source.hasOwnProperty(prop)) {
+            continue;
+        }
+
+        if (ko.isWriteableObservable(source[prop])) {
+            isObservable = true;
+            srcVal = source[prop]();
+        } else if (typeof (source[prop]) !== 'function') {
+            srcVal = source[prop];
+        }
+
+        if (ko.isWriteableObservable(target[prop])) {
+            target[prop](srcVal);
+        } else if (target[prop] === null || target[prop] === undefined) {
+
+            target[prop] = isObservable ? ko.observable(srcVal) : srcVal;
+
+        } else if (typeof (target[prop]) !== 'function') {
+            target[prop] = srcVal;
+        }
+
+        isObservable = false;
+    }
+};
+
+ko.utils.clone = (obj: Object, emptyObj: Object): void =>
+{
+    var json = ko.toJSON(obj);
+    var js = JSON.parse(json);
+
+    ko.utils.extendObservable(emptyObj, js);
+};

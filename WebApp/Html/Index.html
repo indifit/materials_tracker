@@ -44,52 +44,72 @@
                 </div>
 
                 <div class="row">
-                    <table class="table table-hover" id="itemPickerTableHeader">
-                        <thead>
-                            <tr>
-                                <th>
-                                    Item Code
-                                </th>
-                                <th>
-                                    Item Description
-                                </th>
-                                <th>
-                                    Part Number
-                                </th>
-                                <th>
-                                    Project Dimension
-                                </th>
-                                <th style="text-align: right">
-                                    Quantity Required
-                                </th>
-                                <th>&nbsp;</th>
-                            </tr>
-                        </thead>
-                    </table>
-                    <div class="long-list-wrapper">
-                        <table class="table table-hover">
-                            <tbody data-bind="if: typeof items == 'undefined' || items == null || items().length == 0">
-                            <tr class="info">
-                                <td colspan="8">
-                                    No Core List items have been loaded yet.
-                                </td>
-                            </tr>
-                            </tbody>
-                            <tbody data-bind="foreach: items, colWidthCalculate: items" id="itemPickerTableBody">
-                                <tr data-bind="css: rowClass">
-                                    <td data-bind="text: itemCode"></td>
-                                    <td data-bind="text: itemDescription + (manufacturer.length > 0 ? ' [' + manufacturer + ']' : '') + (brand.length > 0 ? ' [' + brand + ']' : '')"></td>
-                                    <td data-bind="text: partNumber"></td>
-                                    <td>
-                                        <select class="form-control" data-bind="options: pdcs, optionsValue: function(item){return item.code}, value: pdc, optionsText: function(item){ return item.code + ' ('  + item.description + ')'}, "></select>
-                                    </td>
-                                    <td>
-                                        <input type="text" class="form-control pull-right quantity" style="width: 45px;" data-bind="value: quantity" />
-                                    </td>
-                                    <td data-bind="text: purchaseUom + ' @ ' + factor + baseUom"></td>
+                    <div class="col-xs-8">
+                        <table class="table table-hover" id="itemPickerTableHeader">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Item Code
+                                    </th>
+                                    <th>
+                                        Item Description
+                                    </th>
+                                    <th>
+                                        Saved to Tracker?
+                                    </th>
                                 </tr>
-                            </tbody>
+                            </thead>
                         </table>
+                        <div class="long-list-wrapper">
+                            <table class="table table-hover">
+                                <tbody data-bind="if: typeof items == 'undefined' || items == null || items().length == 0">
+                                    <tr class="info">
+                                        <td colspan="3">
+                                            No Core List items have been loaded yet.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody data-bind="foreach: items, colWidthCalculate: items" id="itemPickerTableBody">
+                                    <tr data-bind="css: rowClass, click: $root.selectItem">
+                                        <td data-bind="text: itemCode"></td>
+                                        <td data-bind="text: itemDescription + (manufacturer.length > 0 ? ' [' + manufacturer + ']' : '') + (brand.length > 0 ? ' [' + brand + ']' : '')"></td>
+                                        <td>
+                                            <i class="glyphicon glyphicon-check" data-bind="visible: isSaved"></i>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-xs-4">
+                        <div class="panel panel-default" data-bind="with: selectedItem" style="margin-top: 60px;">
+                            <div class="panel-heading">
+                                <h3 class="panel-title" data-bind="text: itemDescription + (manufacturer.length > 0 ? ' [' + manufacturer + ']' : '') + (brand.length > 0 ? ' [' + brand + ']' : '')"></h3>
+                            </div>
+                            <div class="panel-body">
+                                <div class="form-horizontal">
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Product Dimension</label>
+                                        <div class="col-xs-8">
+                                            <select class="form-control" data-bind="options: pdcs, optionsValue: function(item){return item.code}, value: pdc, optionsText: function(item){ return item.code + ' ('  + item.description + ')'}, "></select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Part Number</label>
+                                        <div class="col-xs-8" data-bind="text: partNumber.length === 0 ? 'N/A' : partNumber">                                            
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Require</label>
+                                        <div class="col-xs-4">
+                                            <input type="text" class="form-control pull-right quantity" style="width: 75px;" data-bind="value: quantity, event: {'blur': addItemToBasket}" />
+                                        </div>
+                                        <label class="col-xs-4" data-bind="text: purchaseUom + ' @ ' + factor + ' ' + baseUom">
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="row">
@@ -106,7 +126,7 @@
                                 </th>
                                 <th>
                                     Item Description
-                                </th>                                
+                                </th>
                                 <th>
                                     Part Number
                                 </th>
@@ -135,7 +155,9 @@
                                     <td data-bind="text: itemDescription + (manufacturer.length > 0 ? ' [' + manufacturer + ']' : '') + (brand.length > 0 ? ' [' + brand + ']' : '')"></td>
                                     <td data-bind="text: partNumber"></td>
                                     <td data-bind="text: pdc"></td>
-                                    <td data-bind="text: quantity"></td>
+                                    <td>
+                                        <input type="text" style="width: 75px;" class="form-control" data-bind="value: quantity, event: {'blur': updateBasketItem}" />
+                                    </td>
                                     <td data-bind="text: purchaseUom + ' @ ' + factor + baseUom"></td>
                                 </tr>
                             </tbody>
@@ -161,7 +183,6 @@
             if (itemsSaved.length > 0) {
                 var savedItem = model.allItems()[i];
                 savedItem.quantity = ko.observable(ko.utils.unwrapObservable(itemsSaved[0].quantity));
-                savedItem.originalQuantity = ko.observable(ko.utils.unwrapObservable(itemsSaved[0].quantity));
                 savedItem.pdc = ko.observable(ko.utils.unwrapObservable(itemsSaved[0].pdc));
                 model.savedItems.push(savedItem);
             }
@@ -201,94 +222,109 @@
     }
 
 
-    $(function ()
-    {        
+    function addItemToBasket(item)
+    {
+        var itemCode = ko.utils.unwrapObservable(item.itemCode);
 
-        $('table').on('blur', '.quantity', function(event)
+        var pdc = ko.utils.unwrapObservable(item.pdc);
+
+        var basketItemsOfType = $.grep(model.basketItems(), function (el)
         {
-            var item = ko.dataFor(this);
-            
-            var itemCode = item.itemCode;
-
-            var pdc = item.pdc;
-
-            var basketItemsOfType = $.grep(model.basketItems(), function (el)
-                {
-                    return el.itemCode === itemCode;
-                });
-
-            if (basketItemsOfType.length > 0)
-            {
-                for (var i = 0; i < model.basketItems().length; i++)
-                {
-                    if (model.basketItems()[i].itemCode === itemCode && model.basketItems()[i].pdc === pdc)
-                    {
-                        model.basketItems()[i].quantity(ko.utils.unwrapObservable(item.quantity));
-
-                        model.basketItems()[i].pdc(ko.utils.unwrapObservable(item.pdc));
-
-                        var q = ko.utils.unwrapObservable(item.quantity);
-
-                        //Removing an item from the basket
-                        if (q === '' || ($.isNumeric(q) && parseInt(q) === 0))
-                        {
-                            if (model.basketItems()[i].isSaved())
-                            {
-                                //If it was saved then flag it as removed
-                                model.basketItems()[i].isRemoved(true);
-                            } else
-                            {
-                                //Otherwise just remove it from the basketItems observable
-                                model.basketItems.remove(function(item)
-                                {
-                                    return item.itemCode === itemCode;
-                                });
-
-                                //Remove all flags from the original item
-                                item.isSaved(false);
-                                item.isAdded(false);
-                                item.isRemoved(false);
-                            }                                                                
-                        } else if(q !== '' && ($.isNumeric(q) &&  parseInt(q) > 0))
-                        {
-                            //Changing an item in the basket, but not removing it
-                            if (model.basketItems()[i].isSaved())
-                            {
-                                //If the quantity is different from that saved then flag it as isAdded (dirty)
-                                if (parseInt(model.basketItems()[i].originalQuantity()) !== parseInt(q))
-                                {
-                                    model.basketItems()[i].isAdded(true);
-                                } else
-                                {
-                                    model.basketItems()[i].isAdded(false);
-                                    model.basketItems()[i].isRemoved(false);
-                                }
-                            }                                
-                        }
-
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                item.quantity = ko.observable(ko.utils.unwrapObservable(item.quantity));
-
-                item.pdc = ko.observable(ko.utils.unwrapObservable(item.pdc));
-
-                if (item.quantity() !== '' && item.quantity() > 0)
-                {
-                    item.isAdded(true);
-                }                    
-
-                model.basketItems.push(item);
-            }            
+            return ko.utils.unwrapObservable(el.itemCode) === itemCode && ko.utils.unwrapObservable(el.pdc) === pdc;
         });
 
+        if (basketItemsOfType.length > 0)
+        {
+            //There are already items in the basket matching the item code and selected pdc
+            for (var i = 0; i < model.basketItems().length; i++)
+            {
+                //Loop through the items in the basket and find the matching item
+                if (ko.utils.unwrapObservable(model.basketItems()[i].itemCode) === itemCode && ko.utils.unwrapObservable(model.basketItems()[i].pdc) === pdc)
+                {
+                    model.basketItems()[i].quantity(ko.utils.unwrapObservable(item.quantity));
+
+                    model.basketItems()[i].pdc(ko.utils.unwrapObservable(item.pdc));
+
+                    var q = ko.utils.unwrapObservable(item.quantity);
+                    
+                    if (q === '' || ($.isNumeric(q) && parseInt(q) === 0))
+                    {
+                        //Removing an item from the basket
+                        model.basketItems.remove(function(thisItem)
+                        {
+                            return thisItem.itemCode === itemCode && thisItem.pdc() === pdc;
+                        });
+
+                        //Remove all flags from the original item
+                        item.isSaved(false);
+                        item.isAdded(false);
+                    }
+
+                    break;
+                }
+            }
+        }
+        else
+        {
+            var newItem = {};
+                        
+            //Use the custom ko.utils.clone function to copy over the property values
+            //in the new object effectively divorcing it from the underlying in-memory object
+            ko.utils.clone(item, newItem);
+
+            newItem.quantity = ko.observable(newItem.quantity);
+
+            newItem.pdc = ko.observable(newItem.pdc);
+
+            newItem.isSaved = ko.observable(false);
+
+            newItem.isAdded = ko.observable(true);
+
+            newItem.rowClass = ko.computed(function()
+            {
+                if (this.isAdded()) {
+                    return 'warning';
+                }
+                if (this.isSaved()) {
+                    return 'danger';
+                }
+            }, newItem);
+
+
+            if (newItem.quantity() !== '' && newItem.quantity() > 0)
+            {
+                item.isAdded(true);
+
+                model.basketItems.push(newItem);
+            }                                
+        }            
+    }
+   
+    function updateBasketItem(item)
+    {
+        var quantity = ko.utils.unwrapObservable(item.quantity);
+
+        if (quantity === '' || parseInt(quantity) === 0)
+        {
+            model.basketItems.remove(function(thisItem)
+            {
+                return ko.utils.unwrapObservable(thisItem.itemCode) === ko.utils.unwrapObservable(item.itemCode) &&
+                    ko.utils.unwrapObservable(thisItem.pdc) === ko.utils.unwrapObservable(item.pdc);
+            });
+        }
+    }
+
+    $(function ()
+    {                
         model = {
             items: ko.observableArray([]),
             allItems: ko.observableArray([]),
             selectedItems: ko.observableArray([]),
+            selectedItem: ko.observable(),
+            selectItem: function(item)
+            {
+                model.selectedItem(item);
+            },
             trades: ko.observableArray([]),
             subCategories: ko.observableArray([]),
             types: ko.observableArray([]),
@@ -298,7 +334,7 @@
             selectedType: ko.observable(''),
             selectedProjectDimension: ko.observable(),
             savedItems: ko.observableArray([]),
-            basketItems: ko.observableArray([])
+            basketItems: ko.observableArray([])            
         };
 
         var trades = JSON.parse('<?=data.trades?>');
@@ -309,23 +345,18 @@
 
         for (var i = 0; i < coreListData.length; i++)
         {
+            coreListData[i].quantity = ko.observable(coreListData[i].quantity);
             coreListData[i].pdc = ko.observable(coreListData[i].pdc);
             coreListData[i].isSaved = ko.observable(coreListData[i].isSaved);
             coreListData[i].isAdded = ko.observable(false);
             coreListData[i].isRemoved = ko.observable(false);
-            coreListData[i].rowClass = ko.computed(function ()
+            coreListData[i].rowClass = ko.computed(function()
             {
-                if (this.isAdded())
-                {
+                if (this.isAdded()) {
                     return 'warning';
                 }
-                if (this.isRemoved())
-                {
+                if (this.isSaved()) {
                     return 'danger';
-                }
-                if (this.isSaved())
-                {
-                    return 'success';
                 }
             }, coreListData[i]);
         }

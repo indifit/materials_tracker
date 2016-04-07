@@ -322,6 +322,9 @@ interface KnockoutUtils {
     // stringTokenize(str: string, delimiter: string): string[];
     // stringTrim(str: string): string;
     // tagNameLower(element: any): string;
+
+    extendObservable: (target: any, source: any) => void;
+    clone: (obj: any, emptyObj: any) => void;
 }
 
 interface KnockoutArrayChange<T> {
