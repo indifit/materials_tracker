@@ -19,7 +19,7 @@
             }            
         }
 
-        toCamelCase = (input: string): string =>
+        static toCamelCase = (input: string): string =>
         {
             //Split the input at the spaces
             var words: string[] = input.split(' ');            
@@ -65,7 +65,7 @@
             {
                 if (firstRow[i].toString() !== '')
                 {
-                    var thisPropertyName: string = this.toCamelCase(firstRow[i].toString());                    
+                    var thisPropertyName: string = RangeUtilties.toCamelCase(firstRow[i].toString());                    
                     propertyNames.push(thisPropertyName);
                 }
             }
@@ -146,11 +146,22 @@
         private pageHash: string;
 
         private projectHash: string;
-
-        constructor(request: GoogleAppsScript.Script.IParameters)
+        
+        constructor(args: {pageHash: string; projectHash: string});
+        constructor(args: GoogleAppsScript.Script.IParameters);
+        constructor(args: any)
         {
-            this.pageHash = request.parameter['pageHash'];
-            this.projectHash = request.parameter['projectHash'];
+            if (typeof args.parameters != 'undefined')
+            {
+                this.pageHash = args.parameter['pageHash'];
+                this.projectHash = args.parameter['projectHash'];    
+            }
+
+            if (typeof args.pageHash != 'undefined')
+            {
+                this.pageHash = args.pageHash;
+                this.projectHash = args.projectHash;
+            }
         }
 
         lookupProjectFromHash = (): MaterialsTracker.Interfaces.IProjectHashLookupResponse => {
@@ -244,31 +255,33 @@
             
             var filteredCoreListData: Object[] = dataFetcher.getFilteredCoreListItems(null);
 
-            var savedCoreListDataObjectArray: Object[] = dataFetcher.getSavedCoreListItems(projectData.projectSsid);
-
             var trades: string[] = [];
 
-            //Get the trades from the core list and determine which items are saved
-            filteredCoreListData.forEach((coreListItem: any): void => {
-                if (trades.indexOf(coreListItem.trade.toString().trim()) === -1) {
-                    trades.push(coreListItem.trade.toString().trim());
-                }
+            if (projectData.projectSsid !== '')
+            {
+                var savedCoreListDataObjectArray: Object[] = dataFetcher.getSavedCoreListItems(projectData.projectSsid);    
 
-                var savedItemsOfThisType: any[] = savedCoreListDataObjectArray.filter((savedItem: any) : boolean =>
-                {
-                    return coreListItem.itemCode === savedItem.itemCode;
+                //Get the trades from the core list and determine which items are saved
+                filteredCoreListData.forEach((coreListItem: any): void => {
+                    if (trades.indexOf(coreListItem.trade.toString().trim()) === -1) {
+                        trades.push(coreListItem.trade.toString().trim());
+                    }
+
+                    var savedItemsOfThisType: any[] = savedCoreListDataObjectArray.filter((savedItem: any): boolean => {
+                        return coreListItem.itemCode === savedItem.itemCode;
+                    });
+
+                    coreListItem.isSaved = savedItemsOfThisType.length > 0;
+
+                    coreListItem.quantity = savedItemsOfThisType.length > 0 ? savedItemsOfThisType[0].quantity : null;
                 });
 
-                coreListItem.isSaved = savedItemsOfThisType.length > 0;
-
-                coreListItem.quantity = savedItemsOfThisType.length > 0 ? savedItemsOfThisType[0].quantity : null;
-            });
+                data.savedCoreListData = JSON.stringify(savedCoreListDataObjectArray);
+            }                                
 
             data.projectData = projectData;
 
-            data.coreListData = JSON.stringify(filteredCoreListData);            
-
-            data.savedCoreListData = JSON.stringify(savedCoreListDataObjectArray);
+            data.coreListData = JSON.stringify(filteredCoreListData);                        
 
             data.trades = JSON.stringify(trades);
 
@@ -377,5 +390,136 @@
 
             return ret;                
         };   
+    }
+
+    export class DataSaver
+    {
+        private static getMaterialsTrackerSs = (projectDetails: { pageHash: string; projectHash: string }): GoogleAppsScript.Spreadsheet.Spreadsheet =>
+        {
+            var pageSelector: PageSelector = new PageSelector(projectDetails);
+
+            var project: MaterialsTracker.Interfaces.IProjectHashLookupResponse = pageSelector.lookupProjectFromHash();
+
+            var materialsTrackerSs: GoogleAppsScript.Spreadsheet.Spreadsheet;
+
+            if (project.projectSsid !== '')
+            {
+                //There is a project materials tracker spreasheet already - no need to create one
+                materialsTrackerSs = SpreadsheetApp.openById(project.projectSsid);
+            } else
+            {
+                //Need to clone a copy of the materials tracker
+                var folderId: string = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('FolderID');
+
+                var folder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById(folderId);
+
+                var masterFiles: GoogleAppsScript.Drive.FileIterator = folder.getFilesByName('Materials Tracker Master');
+
+                var masterFile: GoogleAppsScript.Drive.File;
+
+                materialsTrackerSs = null;
+
+                if (masterFiles.hasNext())
+                {
+                    masterFile = masterFiles.next();
+
+                    //Get the Id of the new Materials Tracker and save it in the project hash lookup spreadsheet
+                    var newFile: GoogleAppsScript.Drive.File = masterFile.makeCopy(project.projectName + ' Materials Tracker');
+                    
+                    //Get the ProjectHash Lookup Spreadsheet ID
+                    var hashLookupSsid: string = MaterialsTracker.Config.ConfigurationManager.getSetting(MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
+
+                    //Open the Hash Lookup spreadsheet using the ssid retrieved
+                    var hashLookupSs: GoogleAppsScript.Spreadsheet.Spreadsheet = SpreadsheetApp.openById(hashLookupSsid);
+
+                    var sheet: GoogleAppsScript.Spreadsheet.Sheet = hashLookupSs.getSheets()[0];
+
+                    var range: GoogleAppsScript.Spreadsheet.Range = sheet.getRange(2, 1, sheet.getLastRow(), sheet.getLastColumn());
+
+                    //Look for the row that matches this project
+                    for (var i = 0; i < range.getNumRows(); i++)
+                    {
+                        if (range[i][0] === project.urlHash)
+                        {
+                            var cell: GoogleAppsScript.Spreadsheet.Range = range.getCell(i + 1, 4);
+
+                            //Set the value of the newly created materials tracker Spreadsheet
+                            cell.setValue(newFile.getId());
+                        }
+                    }
+                    
+                    //Get the spreadsheet
+                    materialsTrackerSs = SpreadsheetApp.openById(newFile.getId());
+
+                    //Set the Project Name and Project Number in the appropriate cells
+                    var projectDetailsSheet: GoogleAppsScript.Spreadsheet.Sheet = materialsTrackerSs.getSheetByName('Project Details');
+
+                    var projectNameCell: GoogleAppsScript.Spreadsheet.Range = projectDetailsSheet.getRange('D:3');
+
+                    projectNameCell.setValue(project.projectName);
+
+                    var projectNumberCell: GoogleAppsScript.Spreadsheet.Range = projectDetailsSheet.getRange('D:5');
+
+                    projectNumberCell.setValue(project.projectNumber);                    
+                }                
+            }
+
+            return materialsTrackerSs;
+        }
+
+        static saveBasketData = (projectDetails: { pageHash: string; projectHash: string }, basketItems: Object[]): void =>
+        {
+            var materialsTrackerSs: GoogleAppsScript.Spreadsheet.Spreadsheet = DataSaver.getMaterialsTrackerSs(projectDetails);
+
+            var materialsTrackingSheet: GoogleAppsScript.Spreadsheet.Sheet = materialsTrackerSs.getSheetByName('Materials Tracking');
+
+            var materialsTrackingRange: GoogleAppsScript.Spreadsheet.Range = materialsTrackingSheet.getRange(1, 1, materialsTrackingSheet.getLastRow(), materialsTrackingSheet.getLastColumn());
+
+            var firstEmptyRowIndex: number = 3; //In an empty tracker this will be the first line item row
+
+            //Find the first empty row in the item description column
+            for (var i = 0; i < materialsTrackingRange.getLastRow(); i++)
+            {
+                if (materialsTrackingRange[i][1].toString().trim() === '')
+                {
+                    firstEmptyRowIndex = i;
+                    break;
+                }
+            }
+
+            var headerMappings: { basketPropName: string, materialsTrackerColNum: number }[] = [];
+
+            headerMappings.push({ basketPropName: 'itemCode', materialsTrackerColNum: 3 });
+            headerMappings.push({ basketPropName: 'itemDescription', materialsTrackerColNum: 2 });
+            headerMappings.push({ basketPropName: 'expectedPurchasePrice', materialsTrackerColNum: 12 });
+            headerMappings.push({ basketPropName: 'purchaseUom', materialsTrackerColNum: 9 });
+            headerMappings.push({ basketPropName: 'factor', materialsTrackerColNum: 10 });
+            headerMappings.push({ basketPropName: 'baseUom', materialsTrackerColNum: 11 });
+            headerMappings.push({ basketPropName: 'leadTime', materialsTrackerColNum: 23 });
+
+            //Read the properties of the basketItems and insert the data into the relevant columns
+            for (var j = 0; j < basketItems.length; j++)
+            {
+                var basketItem = basketItems[j];
+                for (var prop in basketItem)
+                {
+                    if (basketItem.hasOwnProperty(prop))
+                    {
+                        var matchingHeaders: { basketPropName: string; materialsTrackerColNum: number }[] = headerMappings.filter((value: { basketPropName: string; materialsTrackerColNum: number }, index: number, array: Object[]): boolean =>
+                        {
+                            return value.basketPropName === prop;
+                        });
+
+                        if (matchingHeaders.length > 0)
+                        {
+                            //Set the value of the appropriate cell
+                            materialsTrackingRange.getCell(firstEmptyRowIndex + 1, matchingHeaders[0].materialsTrackerColNum).setValue(basketItem[prop]);
+                        }
+                    }
+                }
+
+                firstEmptyRowIndex++;
+            }
+        }
     }
 }

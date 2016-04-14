@@ -232,7 +232,6 @@
         model.types(filteredData.types);
     }
 
-
     function addItemToBasket(item)
     {
         var itemCode = ko.utils.unwrapObservable(item.itemCode);
@@ -370,7 +369,7 @@
             selectedProjectDimension: ko.observable(),
             savedItems: ko.observableArray([]),
             basketItems: ko.observableArray([])            
-        };
+        };        
 
         var trades = JSON.parse('<?=data.trades?>');
 
@@ -407,10 +406,15 @@
 
         model.items(coreListData);
 
-        var savedCoreListData = JSON.parse('<?=data.savedCoreListData?>');
+        if ('<?=data.savedCoreListData?>' !== '')
+        {
+            var savedCoreListData = JSON.parse('<?=data.savedCoreListData?>');
 
-        loadSavedItems(savedCoreListData);
-
+            if (savedCoreListData != null) {
+                loadSavedItems(savedCoreListData);
+            }
+        }        
+        
         filterItems(coreListData);
 
         ko.bindingHandlers.colWidthCalculate = {

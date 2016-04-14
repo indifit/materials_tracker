@@ -60,3 +60,10 @@ function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter)
     }
        
 }
+
+function saveBasketToMaterialsTracker(basketItems: Object[], projectDetails: { pageHash: string; projectHash: string })
+{
+    
+
+    
+}

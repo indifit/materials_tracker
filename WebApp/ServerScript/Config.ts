@@ -4,7 +4,7 @@
     {
         static configSettingsSsid: string = '1gBxiGSY9EjNA-ycT_JZy5C9KA0HD3Vsm9HVPs60xQws';
 
-        static projectNumberLookupSsidKey: string = 'ProjectNumberLookupSSID';
+        static projectNumberLookupSsidKey: string = 'ProjectNumberLookupSSID';        
 
         static getSetting = (key: string): string =>
         {

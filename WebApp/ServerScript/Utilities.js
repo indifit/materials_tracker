@@ -7,23 +7,6 @@
                     var _this = this;
                     this.range = null;
                     this.rangeValues = null;
-                    this.toCamelCase = function (input) {
-                        //Split the input at the spaces
-                        var words = input.split(' ');
-
-                        for (var i = 0; i < words.length; i++) {
-                            if (i === 0) {
-                                //convert the first word to lower case
-                                words[i] = words[i].toLowerCase();
-                            } else {
-                                //Capitalise the first letter of the remaining words
-                                words[i] = words[i].substr(0, 1).toUpperCase() + words[i].substring(1).toLowerCase();
-                            }
-                        }
-
-                        //Re-join the array
-                        return words.join('');
-                    };
                     this.convertToObjectArray = function () {
                         var ret = [];
 
@@ -42,7 +25,7 @@
 
                         for (var i = 0; i < firstRow.length; i++) {
                             if (firstRow[i].toString() !== '') {
-                                var thisPropertyName = _this.toCamelCase(firstRow[i].toString());
+                                var thisPropertyName = RangeUtilties.toCamelCase(firstRow[i].toString());
                                 propertyNames.push(thisPropertyName);
                             }
                         }
@@ -65,6 +48,24 @@
                         this.rangeValues = r;
                     }
                 }
+                RangeUtilties.toCamelCase = function (input) {
+                    //Split the input at the spaces
+                    var words = input.split(' ');
+
+                    for (var i = 0; i < words.length; i++) {
+                        if (i === 0) {
+                            //convert the first word to lower case
+                            words[i] = words[i].toLowerCase();
+                        } else {
+                            //Capitalise the first letter of the remaining words
+                            words[i] = words[i].substr(0, 1).toUpperCase() + words[i].substring(1).toLowerCase();
+                        }
+                    }
+
+                    //Re-join the array
+                    return words.join('');
+                };
+
                 RangeUtilties.findRowsMatchingKey = function (rangeValues, lookupVal, keyColIndex, headerRow) {
                     if (typeof keyColIndex === "undefined") { keyColIndex = 0; }
                     var rowVals;
@@ -112,7 +113,7 @@
             Utilities.RangeUtilties = RangeUtilties;
 
             var PageSelector = (function () {
-                function PageSelector(request) {
+                function PageSelector(args) {
                     var _this = this;
                     this.lookupProjectFromHash = function () {
                         var hashLookupSsid = MaterialsTracker.Config.ConfigurationManager.getSetting(MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
@@ -195,37 +196,46 @@
 
                         var filteredCoreListData = dataFetcher.getFilteredCoreListItems(null);
 
-                        var savedCoreListDataObjectArray = dataFetcher.getSavedCoreListItems(projectData.projectSsid);
-
                         var trades = [];
 
-                        //Get the trades from the core list and determine which items are saved
-                        filteredCoreListData.forEach(function (coreListItem) {
-                            if (trades.indexOf(coreListItem.trade.toString().trim()) === -1) {
-                                trades.push(coreListItem.trade.toString().trim());
-                            }
+                        if (projectData.projectSsid !== '') {
+                            var savedCoreListDataObjectArray = dataFetcher.getSavedCoreListItems(projectData.projectSsid);
 
-                            var savedItemsOfThisType = savedCoreListDataObjectArray.filter(function (savedItem) {
-                                return coreListItem.itemCode === savedItem.itemCode;
+                            //Get the trades from the core list and determine which items are saved
+                            filteredCoreListData.forEach(function (coreListItem) {
+                                if (trades.indexOf(coreListItem.trade.toString().trim()) === -1) {
+                                    trades.push(coreListItem.trade.toString().trim());
+                                }
+
+                                var savedItemsOfThisType = savedCoreListDataObjectArray.filter(function (savedItem) {
+                                    return coreListItem.itemCode === savedItem.itemCode;
+                                });
+
+                                coreListItem.isSaved = savedItemsOfThisType.length > 0;
+
+                                coreListItem.quantity = savedItemsOfThisType.length > 0 ? savedItemsOfThisType[0].quantity : null;
                             });
 
-                            coreListItem.isSaved = savedItemsOfThisType.length > 0;
-
-                            coreListItem.quantity = savedItemsOfThisType.length > 0 ? savedItemsOfThisType[0].quantity : null;
-                        });
+                            data.savedCoreListData = JSON.stringify(savedCoreListDataObjectArray);
+                        }
 
                         data.projectData = projectData;
 
                         data.coreListData = JSON.stringify(filteredCoreListData);
 
-                        data.savedCoreListData = JSON.stringify(savedCoreListDataObjectArray);
-
                         data.trades = JSON.stringify(trades);
 
                         return data;
                     };
-                    this.pageHash = request.parameter['pageHash'];
-                    this.projectHash = request.parameter['projectHash'];
+                    if (typeof args.parameters != 'undefined') {
+                        this.pageHash = args.parameter['pageHash'];
+                        this.projectHash = args.parameter['projectHash'];
+                    }
+
+                    if (typeof args.pageHash != 'undefined') {
+                        this.pageHash = args.pageHash;
+                        this.projectHash = args.projectHash;
+                    }
                 }
                 return PageSelector;
             })();
@@ -328,6 +338,96 @@
                 return DataFetcher;
             })();
             Utilities.DataFetcher = DataFetcher;
+
+            var DataSaver = (function () {
+                function DataSaver() {
+                }
+                DataSaver.getMaterialsTrackerSs = function (projectDetails) {
+                    var pageSelector = new PageSelector(projectDetails);
+
+                    var project = pageSelector.lookupProjectFromHash();
+
+                    var materialsTrackerSs;
+
+                    if (project.projectSsid !== '') {
+                        //There is a project materials tracker spreasheet already - no need to create one
+                        materialsTrackerSs = SpreadsheetApp.openById(project.projectSsid);
+                    } else {
+                        //Need to clone a copy of the materials tracker
+                        var folderId = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('FolderID');
+
+                        var folder = DriveApp.getFolderById(folderId);
+
+                        var masterFiles = folder.getFilesByName('Materials Tracker Master');
+
+                        var masterFile;
+
+                        materialsTrackerSs = null;
+
+                        if (masterFiles.hasNext()) {
+                            masterFile = masterFiles.next();
+
+                            //Get the Id of the new Materials Tracker and save it in the project hash lookup spreadsheet
+                            var newFile = masterFile.makeCopy(project.projectName + ' Materials Tracker');
+
+                            //Get the ProjectHash Lookup Spreadsheet ID
+                            var hashLookupSsid = MaterialsTracker.Config.ConfigurationManager.getSetting(MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
+
+                            //Open the Hash Lookup spreadsheet using the ssid retrieved
+                            var hashLookupSs = SpreadsheetApp.openById(hashLookupSsid);
+
+                            var sheet = hashLookupSs.getSheets()[0];
+
+                            var range = sheet.getRange(2, 1, sheet.getLastRow(), sheet.getLastColumn());
+
+                            for (var i = 0; i < range.getNumRows(); i++) {
+                                if (range[i][0] === project.urlHash) {
+                                    var cell = range.getCell(i + 1, 4);
+
+                                    //Set the value of the newly created materials tracker Spreadsheet
+                                    cell.setValue(newFile.getId());
+                                }
+                            }
+
+                            //Get the spreadsheet
+                            materialsTrackerSs = SpreadsheetApp.openById(newFile.getId());
+
+                            //Set the Project Name and Project Number in the appropriate cells
+                            var projectDetailsSheet = materialsTrackerSs.getSheetByName('Project Details');
+
+                            var projectNameCell = projectDetailsSheet.getRange('D:3');
+
+                            projectNameCell.setValue(project.projectName);
+
+                            var projectNumberCell = projectDetailsSheet.getRange('D:5');
+
+                            projectNumberCell.setValue(project.projectNumber);
+                        }
+                    }
+
+                    return materialsTrackerSs;
+                };
+
+                DataSaver.saveBasketData = function (projectDetails, basketItems) {
+                    var materialsTrackerSs = DataSaver.getMaterialsTrackerSs(projectDetails);
+
+                    var materialsTrackingSheet = materialsTrackerSs.getSheetByName('Materials Tracking');
+
+                    var materialsTrackingRange = materialsTrackingSheet.getRange(1, 1, materialsTrackingSheet.getLastRow(), materialsTrackingSheet.getLastColumn());
+
+                    var firstEmptyRowIndex = 3;
+
+                    for (var i = 0; i < materialsTrackingRange.getLastRow(); i++) {
+                        if (materialsTrackingRange[i][1].toString().trim() === '') {
+                            firstEmptyRowIndex = i;
+                            break;
+                        }
+                    }
+                    //Read the
+                };
+                return DataSaver;
+            })();
+            Utilities.DataSaver = DataSaver;
         })(MaterialsTracker.Utilities || (MaterialsTracker.Utilities = {}));
         var Utilities = MaterialsTracker.Utilities;
     })(jw.MaterialsTracker || (jw.MaterialsTracker = {}));
