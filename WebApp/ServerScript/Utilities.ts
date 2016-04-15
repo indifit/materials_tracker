@@ -150,16 +150,17 @@
         constructor(args: {pageHash: string; projectHash: string});
         constructor(args: GoogleAppsScript.Script.IParameters);
         constructor(args: any)
-        {
+        {            
             if (typeof args.parameters != 'undefined')
             {
                 this.pageHash = args.parameter['pageHash'];
                 this.projectHash = args.parameter['projectHash'];    
             }
 
-            if (typeof args.pageHash != 'undefined')
-            {
+            if (typeof args.projectHash != 'undefined')
+            {             
                 this.pageHash = args.pageHash;
+
                 this.projectHash = args.projectHash;
             }
         }
@@ -203,7 +204,8 @@
                 };
             }
 
-            var projectLookupResponse: MaterialsTracker.Interfaces.IProjectHashLookupResponse = this.lookupProjectFromHash();            
+            var projectLookupResponse: MaterialsTracker.Interfaces.IProjectHashLookupResponse = this.lookupProjectFromHash();
+
 
             if (projectLookupResponse == null)
             {
@@ -247,7 +249,6 @@
             var data: any = {
                 projectData: projectData,
                 coreListData: null,
-                savedCoreListData: null,
                 trades: null
             };
 
@@ -257,28 +258,32 @@
 
             var trades: string[] = [];
 
+            var savedCoreListDataObjectArray: Object[] = null;
+
             if (projectData.projectSsid !== '')
             {
-                var savedCoreListDataObjectArray: Object[] = dataFetcher.getSavedCoreListItems(projectData.projectSsid);    
+                savedCoreListDataObjectArray = dataFetcher.getSavedCoreListItems(projectData.projectSsid);
+            }
 
-                //Get the trades from the core list and determine which items are saved
-                filteredCoreListData.forEach((coreListItem: any): void => {
-                    if (trades.indexOf(coreListItem.trade.toString().trim()) === -1) {
-                        trades.push(coreListItem.trade.toString().trim());
-                    }
+            //Get the trades from the core list and determine which items are saved
+            filteredCoreListData.forEach((coreListItem: any): void => {
+                if (trades.indexOf(coreListItem.trade.toString().trim()) === -1) {
+                    trades.push(coreListItem.trade.toString().trim());
+                }
 
+                if (projectData.projectSsid !== '')
+                {
                     var savedItemsOfThisType: any[] = savedCoreListDataObjectArray.filter((savedItem: any): boolean => {
                         return coreListItem.itemCode === savedItem.itemCode;
                     });
 
                     coreListItem.isSaved = savedItemsOfThisType.length > 0;
 
-                    coreListItem.quantity = savedItemsOfThisType.length > 0 ? savedItemsOfThisType[0].quantity : null;
-                });
+                    coreListItem.quantity = savedItemsOfThisType.length > 0 ? savedItemsOfThisType[0].quantity : null;   
+                }
+            });
 
-                data.savedCoreListData = JSON.stringify(savedCoreListDataObjectArray);
-            }                                
-
+                                            
             data.projectData = projectData;
 
             data.coreListData = JSON.stringify(filteredCoreListData);                        
@@ -409,7 +414,7 @@
             } else
             {
                 //Need to clone a copy of the materials tracker
-                var folderId: string = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('FolderID');
+                var folderId: string = MaterialsTracker.Config.ConfigurationManager.getSetting('FolderID');
 
                 var folder: GoogleAppsScript.Drive.Folder = DriveApp.getFolderById(folderId);
 
@@ -437,14 +442,12 @@
                     var range: GoogleAppsScript.Spreadsheet.Range = sheet.getRange(2, 1, sheet.getLastRow(), sheet.getLastColumn());
 
                     //Look for the row that matches this project
-                    for (var i = 0; i < range.getNumRows(); i++)
+                    for (var i = 1; i <= range.getNumRows(); i++)
                     {
-                        if (range[i][0] === project.urlHash)
+                        if (range.getCell(i, 1).getValue() === project.urlHash)
                         {
-                            var cell: GoogleAppsScript.Spreadsheet.Range = range.getCell(i + 1, 4);
-
                             //Set the value of the newly created materials tracker Spreadsheet
-                            cell.setValue(newFile.getId());
+                            range.getCell(i, 4).setValue(newFile.getId());                                                       
                         }
                     }
                     
@@ -454,11 +457,11 @@
                     //Set the Project Name and Project Number in the appropriate cells
                     var projectDetailsSheet: GoogleAppsScript.Spreadsheet.Sheet = materialsTrackerSs.getSheetByName('Project Details');
 
-                    var projectNameCell: GoogleAppsScript.Spreadsheet.Range = projectDetailsSheet.getRange('D:3');
+                    var projectNameCell: GoogleAppsScript.Spreadsheet.Range = projectDetailsSheet.getRange('D3');                    
 
                     projectNameCell.setValue(project.projectName);
 
-                    var projectNumberCell: GoogleAppsScript.Spreadsheet.Range = projectDetailsSheet.getRange('D:5');
+                    var projectNumberCell: GoogleAppsScript.Spreadsheet.Range = projectDetailsSheet.getRange('D5');
 
                     projectNumberCell.setValue(project.projectNumber);                    
                 }                
@@ -469,25 +472,25 @@
 
         static saveBasketData = (projectDetails: { pageHash: string; projectHash: string }, basketItems: Object[]): void =>
         {
-            var materialsTrackerSs: GoogleAppsScript.Spreadsheet.Spreadsheet = DataSaver.getMaterialsTrackerSs(projectDetails);
+            var materialsTrackerSs: GoogleAppsScript.Spreadsheet.Spreadsheet = DataSaver.getMaterialsTrackerSs(projectDetails);            
 
             var materialsTrackingSheet: GoogleAppsScript.Spreadsheet.Sheet = materialsTrackerSs.getSheetByName('Materials Tracking');
 
             var materialsTrackingRange: GoogleAppsScript.Spreadsheet.Range = materialsTrackingSheet.getRange(1, 1, materialsTrackingSheet.getLastRow(), materialsTrackingSheet.getLastColumn());
 
-            var firstEmptyRowIndex: number = 3; //In an empty tracker this will be the first line item row
+            var firstEmptyRowNumber: number = 4; //In an empty tracker this will be the first line item row
 
             //Find the first empty row in the item description column
-            for (var i = 0; i < materialsTrackingRange.getLastRow(); i++)
+            for (var i = firstEmptyRowNumber; i <= materialsTrackingRange.getNumRows(); i++)
             {
-                if (materialsTrackingRange[i][1].toString().trim() === '')
+                if (materialsTrackingRange.getCell(i, 2).getValue().toString().trim() === '')
                 {
-                    firstEmptyRowIndex = i;
+                    firstEmptyRowNumber = i;
                     break;
                 }
             }
 
-            var headerMappings: { basketPropName: string, materialsTrackerColNum: number }[] = [];
+            var headerMappings: { basketPropName: string; materialsTrackerColNum: number }[] = [];
 
             headerMappings.push({ basketPropName: 'itemCode', materialsTrackerColNum: 3 });
             headerMappings.push({ basketPropName: 'itemDescription', materialsTrackerColNum: 2 });
@@ -496,6 +499,8 @@
             headerMappings.push({ basketPropName: 'factor', materialsTrackerColNum: 10 });
             headerMappings.push({ basketPropName: 'baseUom', materialsTrackerColNum: 11 });
             headerMappings.push({ basketPropName: 'leadTime', materialsTrackerColNum: 23 });
+            headerMappings.push({ basketPropName: 'usage', materialsTrackerColNum: 6 });
+            headerMappings.push({ basketPropName: 'quantity', materialsTrackerColNum: 8 });
 
             //Read the properties of the basketItems and insert the data into the relevant columns
             for (var j = 0; j < basketItems.length; j++)
@@ -513,12 +518,21 @@
                         if (matchingHeaders.length > 0)
                         {
                             //Set the value of the appropriate cell
-                            materialsTrackingRange.getCell(firstEmptyRowIndex + 1, matchingHeaders[0].materialsTrackerColNum).setValue(basketItem[prop]);
+                            materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(basketItem[prop]);
+                        } else
+                        {
+                            if (prop === 'pdc')
+                            {                                
+                                materialsTrackingRange.getCell(firstEmptyRowNumber, 17).setValue(basketItem['pdc'].description);
+                                materialsTrackingRange.getCell(firstEmptyRowNumber, 18).setValue(basketItem['pdc'].code);                                
+                            }
+
+                            materialsTrackingRange.getCell(firstEmptyRowNumber, 4).setValue('Core Item');
                         }
                     }
                 }
 
-                firstEmptyRowIndex++;
+                firstEmptyRowNumber++;
             }
         }
     }

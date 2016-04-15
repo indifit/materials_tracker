@@ -21,7 +21,7 @@ function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter)
 
     var categories: string[] = [];
 
-    var types: string[] = [];       
+    var types: string[] = []; 
 
     //If no filter has been passed only retrieve the trades
     if (typeof filter != 'undefined')
@@ -63,7 +63,5 @@ function getCoreListData(filter: jw.MaterialsTracker.Interfaces.ICoreListFilter)
 
 function saveBasketToMaterialsTracker(basketItems: Object[], projectDetails: { pageHash: string; projectHash: string })
 {
-    
-
-    
+    jw.MaterialsTracker.Utilities.DataSaver.saveBasketData(projectDetails, basketItems);    
 }

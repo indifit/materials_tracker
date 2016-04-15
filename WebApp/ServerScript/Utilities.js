@@ -188,7 +188,6 @@
                         var data = {
                             projectData: projectData,
                             coreListData: null,
-                            savedCoreListData: null,
                             trades: null
                         };
 
@@ -198,15 +197,19 @@
 
                         var trades = [];
 
+                        var savedCoreListDataObjectArray = null;
+
                         if (projectData.projectSsid !== '') {
-                            var savedCoreListDataObjectArray = dataFetcher.getSavedCoreListItems(projectData.projectSsid);
+                            savedCoreListDataObjectArray = dataFetcher.getSavedCoreListItems(projectData.projectSsid);
+                        }
 
-                            //Get the trades from the core list and determine which items are saved
-                            filteredCoreListData.forEach(function (coreListItem) {
-                                if (trades.indexOf(coreListItem.trade.toString().trim()) === -1) {
-                                    trades.push(coreListItem.trade.toString().trim());
-                                }
+                        //Get the trades from the core list and determine which items are saved
+                        filteredCoreListData.forEach(function (coreListItem) {
+                            if (trades.indexOf(coreListItem.trade.toString().trim()) === -1) {
+                                trades.push(coreListItem.trade.toString().trim());
+                            }
 
+                            if (projectData.projectSsid !== '') {
                                 var savedItemsOfThisType = savedCoreListDataObjectArray.filter(function (savedItem) {
                                     return coreListItem.itemCode === savedItem.itemCode;
                                 });
@@ -214,10 +217,8 @@
                                 coreListItem.isSaved = savedItemsOfThisType.length > 0;
 
                                 coreListItem.quantity = savedItemsOfThisType.length > 0 ? savedItemsOfThisType[0].quantity : null;
-                            });
-
-                            data.savedCoreListData = JSON.stringify(savedCoreListDataObjectArray);
-                        }
+                            }
+                        });
 
                         data.projectData = projectData;
 
@@ -232,8 +233,9 @@
                         this.projectHash = args.parameter['projectHash'];
                     }
 
-                    if (typeof args.pageHash != 'undefined') {
+                    if (typeof args.projectHash != 'undefined') {
                         this.pageHash = args.pageHash;
+
                         this.projectHash = args.projectHash;
                     }
                 }
@@ -354,7 +356,7 @@
                         materialsTrackerSs = SpreadsheetApp.openById(project.projectSsid);
                     } else {
                         //Need to clone a copy of the materials tracker
-                        var folderId = jw.MaterialsTracker.Config.ConfigurationManager.getSetting('FolderID');
+                        var folderId = MaterialsTracker.Config.ConfigurationManager.getSetting('FolderID');
 
                         var folder = DriveApp.getFolderById(folderId);
 
@@ -380,12 +382,10 @@
 
                             var range = sheet.getRange(2, 1, sheet.getLastRow(), sheet.getLastColumn());
 
-                            for (var i = 0; i < range.getNumRows(); i++) {
-                                if (range[i][0] === project.urlHash) {
-                                    var cell = range.getCell(i + 1, 4);
-
+                            for (var i = 1; i <= range.getNumRows(); i++) {
+                                if (range.getCell(i, 1).getValue() === project.urlHash) {
                                     //Set the value of the newly created materials tracker Spreadsheet
-                                    cell.setValue(newFile.getId());
+                                    range.getCell(i, 4).setValue(newFile.getId());
                                 }
                             }
 
@@ -395,11 +395,11 @@
                             //Set the Project Name and Project Number in the appropriate cells
                             var projectDetailsSheet = materialsTrackerSs.getSheetByName('Project Details');
 
-                            var projectNameCell = projectDetailsSheet.getRange('D:3');
+                            var projectNameCell = projectDetailsSheet.getRange('D3');
 
                             projectNameCell.setValue(project.projectName);
 
-                            var projectNumberCell = projectDetailsSheet.getRange('D:5');
+                            var projectNumberCell = projectDetailsSheet.getRange('D5');
 
                             projectNumberCell.setValue(project.projectNumber);
                         }
@@ -415,15 +415,51 @@
 
                     var materialsTrackingRange = materialsTrackingSheet.getRange(1, 1, materialsTrackingSheet.getLastRow(), materialsTrackingSheet.getLastColumn());
 
-                    var firstEmptyRowIndex = 3;
+                    var firstEmptyRowNumber = 4;
 
-                    for (var i = 0; i < materialsTrackingRange.getLastRow(); i++) {
-                        if (materialsTrackingRange[i][1].toString().trim() === '') {
-                            firstEmptyRowIndex = i;
+                    for (var i = firstEmptyRowNumber; i <= materialsTrackingRange.getNumRows(); i++) {
+                        if (materialsTrackingRange.getCell(i, 2).getValue().toString().trim() === '') {
+                            firstEmptyRowNumber = i;
                             break;
                         }
                     }
-                    //Read the
+
+                    var headerMappings = [];
+
+                    headerMappings.push({ basketPropName: 'itemCode', materialsTrackerColNum: 3 });
+                    headerMappings.push({ basketPropName: 'itemDescription', materialsTrackerColNum: 2 });
+                    headerMappings.push({ basketPropName: 'expectedPurchasePrice', materialsTrackerColNum: 12 });
+                    headerMappings.push({ basketPropName: 'purchaseUom', materialsTrackerColNum: 9 });
+                    headerMappings.push({ basketPropName: 'factor', materialsTrackerColNum: 10 });
+                    headerMappings.push({ basketPropName: 'baseUom', materialsTrackerColNum: 11 });
+                    headerMappings.push({ basketPropName: 'leadTime', materialsTrackerColNum: 23 });
+                    headerMappings.push({ basketPropName: 'usage', materialsTrackerColNum: 6 });
+                    headerMappings.push({ basketPropName: 'quantity', materialsTrackerColNum: 8 });
+
+                    for (var j = 0; j < basketItems.length; j++) {
+                        var basketItem = basketItems[j];
+                        for (var prop in basketItem) {
+                            if (basketItem.hasOwnProperty(prop)) {
+                                var matchingHeaders = headerMappings.filter(function (value, index, array) {
+                                    return value.basketPropName === prop;
+                                });
+
+                                if (matchingHeaders.length > 0) {
+                                    //Set the value of the appropriate cell
+                                    materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(basketItem[prop]);
+                                } else {
+                                    if (prop === 'pdc') {
+                                        materialsTrackingRange.getCell(firstEmptyRowNumber, 17).setValue(basketItem['pdc'].description);
+                                        materialsTrackingRange.getCell(firstEmptyRowNumber, 18).setValue(basketItem['pdc'].code);
+                                    }
+
+                                    materialsTrackingRange.getCell(firstEmptyRowNumber, 4).setValue('Core Item');
+                                }
+                            }
+                        }
+
+                        firstEmptyRowNumber++;
+                    }
                 };
                 return DataSaver;
             })();

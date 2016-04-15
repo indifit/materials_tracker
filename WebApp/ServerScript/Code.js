@@ -50,5 +50,6 @@ function getCoreListData(filter) {
 }
 
 function saveBasketToMaterialsTracker(basketItems, projectDetails) {
+    jw.MaterialsTracker.Utilities.DataSaver.saveBasketData(projectDetails, basketItems);
 }
 //# sourceMappingURL=Code.js.map
