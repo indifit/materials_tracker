@@ -6,9 +6,8 @@
      * server that will return all such mappings
      */
     export interface IProjectHashLookupResponse {
-        projectNumber: number;
+        projectNumber: string;
         projectName: string;
-        kingdomHallAddress?: string;
         urlHash: string;
         projectSsid?: string;
     }

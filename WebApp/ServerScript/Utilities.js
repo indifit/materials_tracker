@@ -116,24 +116,23 @@
                 function PageSelector(args) {
                     var _this = this;
                     this.lookupProjectFromHash = function () {
-                        var hashLookupSsid = MaterialsTracker.Config.ConfigurationManager.getSetting(MaterialsTracker.Config.ConfigurationManager.projectNumberLookupSsidKey);
+                        var hashLookupSsid = '1lMwQsbonNGycRoA-Zelm151YU6S_fididqPyTXDJmVQ';
 
                         //Open the spreadsheet using the ssid
                         var hashLookupSs = SpreadsheetApp.openById(hashLookupSsid);
 
-                        var sheet = hashLookupSs.getSheets()[0];
+                        var sheet = hashLookupSs.getSheetByName('MaterialsTrackers');
 
                         var range = sheet.getRange(2, 1, sheet.getLastRow(), sheet.getLastColumn());
 
-                        var projHashRow = RangeUtilties.findFirstRowMatchingKey(range, _this.projectHash);
+                        var projHashRow = RangeUtilties.findFirstRowMatchingKey(range, _this.projectHash, 6);
 
                         if (projHashRow != null) {
                             var response = {
-                                projectNumber: parseInt(projHashRow[1].toString()),
-                                urlHash: projHashRow[0].toString(),
-                                projectName: projHashRow[2].toString(),
-                                projectSsid: typeof projHashRow[3] !== 'undefined' ? projHashRow[3].toString() : '',
-                                kingdomHallAddress: typeof projHashRow[4] !== 'undefined' ? projHashRow[4].toString() : ''
+                                projectNumber: projHashRow[2].toString(),
+                                urlHash: projHashRow[6].toString(),
+                                projectName: projHashRow[1].toString(),
+                                projectSsid: typeof projHashRow[5] !== 'undefined' ? projHashRow[5].toString() : ''
                             };
 
                             return response;
@@ -151,7 +150,7 @@
 
                         var projectLookupResponse = _this.lookupProjectFromHash();
 
-                        if (projectLookupResponse == null) {
+                        if (projectLookupResponse == null || (typeof projectLookupResponse.projectSsid === 'undefined' || projectLookupResponse.projectSsid === '')) {
                             return {
                                 templateName: 'InvalidProjectPage',
                                 data: {}
@@ -184,7 +183,7 @@
                             data: data
                         };
                     };
-                    this.getIndexPageData = function (projectData) {
+                    this.getClpData = function (projectData) {
                         var data = {
                             projectData: projectData,
                             coreListData: null,
@@ -454,6 +453,8 @@
                                     }
 
                                     materialsTrackingRange.getCell(firstEmptyRowNumber, 4).setValue('Core Item');
+                                    materialsTrackingRange.getCell(firstEmptyRowNumber, 19).setValue('Branch Purchasing');
+                                    materialsTrackingRange.getCell(firstEmptyRowNumber, 27).setValue('1 To Be Reviewed');
                                 }
                             }
                         }

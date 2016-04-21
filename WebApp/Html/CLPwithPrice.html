@@ -1,0 +1,530 @@
+﻿<?!=HtmlService.createHtmlOutputFromFile('Stylesheet').getContent();?>
+
+<!DOCTYPE html>
+<html>
+<head>
+
+</head>
+<body>
+
+    <?!=HtmlService.createTemplateFromFile('Header').evaluate().getContent();?>
+
+    <div class="container main-content">
+        <div class="row">
+            <?if(typeof data.kingdomHallAddress != 'undefined'){?>
+
+            <div class="col-xs-4">
+                <h3>Kingdom Hall Address:</h3>
+            </div>
+            <div class="col-xs-8">
+                <h3>
+                    <?=data.projectData.kingdomHallAddress?>
+
+                </h3>
+            </div>
+            <?}?>
+
+            <div class="col-xs-12">
+                <div class="row">
+                    <h3 class="col-xs-2">Core List</h3>
+                    <div class="col-xs-10 form-inline" data-bind="visible: trades().length != 0">
+                        <div class="form-group" data-bind="if: selectedTrade() != '' && selectedTrade() != null">
+                            <button type="button" class="btn btn-primary" data-bind="click: resetFilters">Show All</button>
+                        </div>
+                        <div class="form-group">
+                            <label for="trades">Trade:</label>
+                            <select class="form-control" data-bind="options: trades, value: selectedTrade, optionsCaption: 'Please Select...'"></select>
+                        </div>
+                        <div class="form-group" data-bind="visible: subCategories().length != 0">
+                            <label for="trades">Category:</label>
+                            <select class="form-control" data-bind="options: subCategories, value: selectedSubCategory, optionsCaption: 'Please Select...'"></select>
+                        </div>
+                        <div class="form-group" data-bind="visible: types().length != 0">
+                            <label for="trades">Type:</label>
+                            <select class="form-control" data-bind="options: types, value: selectedType, optionsCaption: 'Please Select...'"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-xs-12 col-md-8">
+                        <table class="table table-condensed" id="itemPickerTableHeader">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Item Code
+                                    </th>
+                                    <th>
+                                        Item Description {Mfg ~ Brand ~ Part}
+                                    </th>
+                                    <th>
+                                        Saved to Tracker?
+                                    </th>
+                                </tr>
+                            </thead>
+                        </table>
+                        <div class="long-list-wrapper">
+                            <table class="table table-condensed">
+                                <tbody data-bind="if: typeof items == 'undefined' || items == null || items().length == 0">
+                                    <tr class="info">
+                                        <td colspan="3">
+                                            No Core List items have been loaded yet.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tbody data-bind="foreach: items, colWidthCalculate: items" id="itemPickerTableBody">
+                                    <tr data-bind="css: rowClass, click: function(item){$root.selectItem(item, true);}">
+                                        <td data-bind="text: itemCode"></td>
+                                        <td data-bind="text: itemDescription + (manufacturer.length > 0 ? ' [' + manufacturer + ']' : '') + (brand.length > 0 ? ' [' + brand + ']' : '') + (partNumber.length > 0 ? ' [' + partNumber + ']' : '')"></td>
+                                        <td>
+                                            <i class="glyphicon glyphicon-check" data-bind="visible: isSaved"></i>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-xs-12">
+                        <div class="panel panel-default" data-bind="with: selectedItem, visible: typeof selectedItem() != 'undefined'">
+                            <div class="panel-heading">
+                                <h3 class="panel-title" data-bind="text: itemDescription + (manufacturer.length > 0 ? ' [' + manufacturer + ']' : '') + (brand.length > 0 ? ' [' + brand + ']' : '')"></h3>
+                            </div>
+                            <div class="panel-body">
+                                <div class="form-horizontal">
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Product Dimension</label>
+                                        <div class="col-xs-8">
+                                            <select class="form-control" data-bind="options: pdcs, optionsValue: function(item){return item;}, value: pdc, optionsText: function(item){ return item.code + ' ('  + item.description + ')'}, "></select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" data-bind="if: typeof dataLink != 'undefined' && dataLink != ''">
+                                        <label class="control-label col-xs-4">Item Info</label>
+                                        <div class="col-xs-8">
+                                            <a data-bind="attr: {href: dataLink}" target="_blank">Data Sheet</a>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" data-bind="if: leadTime != ''">
+                                        <label class="control-label col-xs-4">Lead Time</label>
+                                        <div class="col-xs-8">
+                                            <span data-bind="text: leadTime"></span> days
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Usage</label>
+                                        <div class="col-xs-8">
+                                            <textarea class="form-control pull-right quantity" rows="5" data-bind="value: usage"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Require</label>
+                                        <div class="col-xs-4">
+                                            <input type="text" class="form-control quantity" style="width: 75px;" data-bind="value: quantity"/>
+                                        </div>
+                                        <label class="col-xs-4" data-bind="text: purchaseUom + ' @ ' + factor + ' ' + baseUom">
+                                        </label>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-xs-8 col-xs-offset-4">
+                                            <button type="button" class="btn btn-primary btn-sm btn-block" data-bind="click: addItemToBasket"><i class="glyphicon glyphicon-plus"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-8 col-xs-12">
+                        <h3>Items Ready to be Added to Materials Tracker</h3>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12">
+                        <table class="table table-condensed" id="basketTableHeader">
+                            <thead>
+                            <tr>
+                                <th>
+                                    Item Code
+                                </th>
+                                <th>
+                                    Item Description
+                                </th>
+                                <th>
+                                    Part Number
+                                </th>
+                                <th>
+                                    Project Dimension
+                                </th>
+                                <th>
+                                    Quantity Required
+                                </th>
+                                <th>&nbsp;</th>
+                            </tr>
+                            </thead>
+                        </table>
+                        <div class="long-list-wrapper">
+                            <table class="table table-condensed" id="basketTableBody">
+                                <tbody data-bind="if: typeof basketItems == 'undefined' || basketItems == null || basketItems().length == 0">
+                                <tr class="info">
+                                    <td colspan="8">
+                                        No Core List items have been added to the basket yet.
+                                    </td>
+                                </tr>
+                                </tbody>
+                                <tbody data-bind="foreach: basketItems, colWidthCalculate: basketItems">
+                                <tr data-bind="css: rowClass, click: function(item){$root.selectItem(item, false);}">
+                                    <td data-bind="text: itemCode"></td>
+                                    <td data-bind="text: itemDescription + (manufacturer.length > 0 ? ' [' + manufacturer + ']' : '') + (brand.length > 0 ? ' [' + brand + ']' : '')"></td>
+                                    <td data-bind="text: partNumber"></td>
+                                    <td data-bind="text: pdc().code"></td>
+                                    <td>
+                                        <input type="text" style="width: 75px;" class="form-control" data-bind="value: quantity"/>
+                                    </td>
+                                    <td>
+                                        <span data-bind="text: purchaseUom + ' @ ' + factor + baseUom"></span>
+                                        <button type="button" class="btn btn-primary btn-sm" data-bind="click: function(item){updateBasketItem(item, true);}"><i class="glyphicon glyphicon-minus"></i></button>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12">
+                        <button class="btn btn-lg btn-primary btn-block" data-bind="visible: basketItems().length > 0, click: saveBasketItems"><i class="glyphicon glyphicon-floppy-disk"></i> Send to Tracker for Review</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+<?!=HtmlService.createTemplateFromFile('JavaScript').evaluate().getContent();?>
+
+<script language="javascript" type="text/javascript">
+    var model;
+
+    var projectHash = '<?=data.projectData.urlHash?>';
+
+    var pageHash = '<?=data.projectData.pageHash?>';
+
+    function loadSavedItems(savedItems) {
+        for (var i = 0; i < model.allItems().length; i++) {
+            var itemsSaved = $.grep(savedItems, function (el) {
+                return el.itemCode === model.allItems()[i].itemCode;
+            });
+
+            if (itemsSaved.length > 0) {
+                var savedItem = model.allItems()[i];
+
+                model.savedItems.push(savedItem);
+            }
+        }        
+    }
+    
+    function filterItems(coreListData, trade, category, type)
+    {
+        var coreListDataParam = new jw.MaterialsTracker.Client.CoreListData(coreListData);
+
+        var filterer = new jw.MaterialsTracker.Client.CoreListFilter(coreListDataParam);
+
+        var filter = new jw.MaterialsTracker.Client.Filter();
+
+        if (typeof trade != 'undefined')
+        {
+            filter.trade = trade;
+        }
+
+        if (typeof category != 'undefined')
+        {
+            filter.category = category;
+        }
+
+        if (typeof type != 'undefined')
+        {
+            filter.type = type;
+        }
+
+        var filteredData = filterer.filterCoreList(filter);
+
+        model.items(filteredData.listData);
+
+        model.subCategories(filteredData.subCategories);
+
+        model.types(filteredData.types);
+    }
+
+    function addItemToBasket(item)
+    {
+        var itemCode = ko.utils.unwrapObservable(item.itemCode);
+
+        var pdc = ko.utils.unwrapObservable(item.pdc);
+
+        var basketItemsOfType = $.grep(model.basketItems(), function (el)
+        {
+            return ko.utils.unwrapObservable(el.itemCode) === itemCode && ko.utils.unwrapObservable(el.pdc) === pdc;
+        });
+
+        if (basketItemsOfType.length > 0)
+        {
+            //Update the item in the basket
+            basketItemsOfType[0].quantity(ko.utils.unwrapObservable(item.quantity));
+
+            basketItemsOfType[0].pdc(ko.utils.unwrapObservable(item.pdc));
+
+            basketItemsOfType[0].usage(ko.utils.unwrapObservable(item.usage));
+
+            var q = ko.utils.unwrapObservable(item.quantity);
+
+            if (q === '' || ($.isNumeric(q) && parseInt(q) === 0)) {
+                //Removing an item from the basket
+                model.basketItems.remove(function (thisItem) {
+                    return thisItem.itemCode === itemCode && thisItem.pdc() === pdc;
+                });
+
+                //Remove all flags from the original item
+                item.isSaved(false);
+                item.isAdded(false);
+            }            
+        }
+        else
+        {
+            var newItem = {};
+                        
+            //Use the custom ko.utils.clone function to copy over the property values
+            //in the new object effectively divorcing it from the underlying in-memory object
+            ko.utils.clone(item, newItem);
+
+            newItem.quantity = ko.observable(newItem.quantity);
+
+            newItem.pdc = ko.observable(newItem.pdc);
+
+            newItem.isSaved = ko.observable(false);
+
+            newItem.isAdded = ko.observable(true);
+
+            newItem.usage = ko.observable(newItem.usage);
+
+            newItem.rowClass = ko.computed(function()
+            {
+                if (model.selectedItem())
+                {
+                    if ((this.itemCode === model.selectedItem().itemCode) && (ko.utils.unwrapObservable(this.pdc) === ko.utils.unwrapObservable(model.selectedItem().pdc))) {
+                        return 'selectedItem';
+                    }
+                }
+                if (this.isAdded()) {
+                    return 'warning';
+                }
+
+                if (this.isSaved()) {
+                    return 'saved';
+                }
+            }, newItem);
+
+
+            if (newItem.quantity() !== '' && newItem.quantity() > 0)
+            {
+                item.isAdded(true);
+
+                model.basketItems.push(newItem);
+            }                                
+        }            
+    }
+   
+    function updateBasketItem(item, forceRemove)
+    {
+        var quantity = ko.utils.unwrapObservable(item.quantity);
+
+        if (typeof forceRemove != 'undefined' && forceRemove == true)
+        {
+            quantity = 0;
+        }
+
+        if (quantity === '' || parseInt(quantity) === 0)
+        {
+            model.basketItems.remove(function(thisItem)
+            {
+                return ko.utils.unwrapObservable(thisItem.itemCode) === ko.utils.unwrapObservable(item.itemCode) &&
+                    ko.utils.unwrapObservable(thisItem.pdc) === ko.utils.unwrapObservable(item.pdc);
+            });
+        } else
+        {
+            //update the editable properties on the core list item
+            var matchingCoreListItems = $.grep(model.allItems(), function(el)
+            {
+                return ko.utils.unwrapObservable(el.itemCode) === ko.utils.unwrapObservable(item.itemCode) &&
+                    ko.utils.unwrapObservable(el.pdc) === ko.utils.unwrapObservable(item.pdc);
+            });
+
+            if (matchingCoreListItems.length > 0)
+            {
+                matchingCoreListItems[0].usage(item.usage());
+                matchingCoreListItems[0].quantity(item.quantity());
+                matchingCoreListItems[0].pdc(item.pdc());
+            }
+        }
+    }
+
+    function saveBasketItems()
+    {
+        toastr.options = {
+            "closeButton": false,
+            "debug": false,
+            "newestOnTop": false,
+            "progressBar": false,
+            "positionClass": "toast-top-full-width",
+            "preventDuplicates": false,
+            "onclick": null,
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "0",
+            "extendedTimeOut": "0",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut",
+            "tapToDismiss": false
+        }
+
+        toastr.info('Please wait while your basket items are saved to the materials tracker');
+
+        var basketItemsObj = ko.toJS(model.basketItems);
+
+        google.script.run.withSuccessHandler(function()
+        {
+            toastr.clear();
+
+            //Set the items in the core list to saved
+            for (var i = 0; i < model.basketItems().length; i++)
+            {
+                var matchingItems = $.grep(model.allItems(), function(item)
+                {
+                    return item.itemCode === model.basketItems()[i].itemCode;
+                });
+
+                if (matchingItems.length > 0)
+                {
+                    matchingItems[0].isAdded(false);
+                    matchingItems[0].isSaved(true);
+                }
+            }
+
+            model.basketItems([]);
+            
+        }).saveBasketToMaterialsTracker(basketItemsObj, { projectHash: projectHash });
+    }
+
+    $(function ()
+    {                
+        var coreListData = JSON.parse('<?=data.coreListData?>');
+
+        model = {
+            items: ko.observableArray([]),
+            allItems: ko.observableArray([]),
+            selectedItems: ko.observableArray([]),
+            selectedItem: ko.observable(),
+            selectItem: function(item, clearFields)
+            {
+                model.selectedItem(item);
+
+                if (typeof clearFields !== 'undefined')
+                {
+                    if (clearFields)
+                    {
+                        model.selectedItem().usage('');
+                        model.selectedItem().pdc('');
+                        model.selectedItem().quantity('');
+                    }
+                }
+            },
+            trades: ko.observableArray([]),
+            subCategories: ko.observableArray([]),
+            types: ko.observableArray([]),
+            projectDimensions: ko.observableArray([]),
+            selectedTrade: ko.observable(''),
+            selectedSubCategory: ko.observable(''),
+            selectedType: ko.observable(''),
+            selectedProjectDimension: ko.observable(),
+            savedItems: ko.observableArray([]),
+            basketItems: ko.observableArray([]),
+            resetFilters: function()
+            {
+                filterItems(coreListData);
+                model.selectedTrade('');
+                model.selectedSubCategory('');
+                model.selectedType('');
+            }
+        };        
+
+        var trades = JSON.parse('<?=data.trades?>');
+
+        model.trades(trades);        
+
+        for (var i = 0; i < coreListData.length; i++)
+        {
+            coreListData[i].quantity = ko.observable(coreListData[i].quantity);
+            coreListData[i].pdc = ko.observable(coreListData[i].pdc);
+            coreListData[i].isSaved = ko.observable(coreListData[i].isSaved);
+            coreListData[i].isAdded = ko.observable(false);
+            coreListData[i].isRemoved = ko.observable(false);
+            coreListData[i].usage = ko.observable('');
+            coreListData[i].rowClass = ko.computed(function()
+            {
+                if (model.selectedItem())
+                {
+                    if ((this.itemCode === model.selectedItem().itemCode) && (ko.utils.unwrapObservable(this.pdc) === ko.utils.unwrapObservable(model.selectedItem().pdc))) {
+                        return 'selectedItem';
+                    }
+                }                
+                if (this.isAdded()) {
+                    return 'warning';
+                }
+                if (this.isSaved()) {
+                    return 'saved';
+                }
+            }, coreListData[i]);
+        }
+
+        model.allItems(coreListData);
+
+        model.items(coreListData);        
+        
+        filterItems(coreListData);
+
+        ko.bindingHandlers.colWidthCalculate = {
+            update: function(element, valueAccessor, allBindings, viewModel, bindingContext) 
+            {
+                var data = ko.utils.unwrapObservable(valueAccessor());
+
+                $('#itemPickerTableBody tr:eq(0) td').each(function (i)
+                {
+                    var cellWidth = $(this).width();
+                    $('#itemPickerTableHeader tr:eq(0) th:eq(' + i + ')').css('width', cellWidth);
+                });
+
+                $('#basketTableBody tr:eq(0) td').each(function (i) {
+                    var cellWidth = $(this).width();
+                    $('#basketTableHeader tr:eq(0) th:eq(' + i + ')').css('width', cellWidth);
+                });
+            }
+        };
+
+        model.selectedTrade.subscribe(function (newValue)
+        {
+            filterItems(model.allItems(), newValue);
+        });
+
+        model.selectedSubCategory.subscribe(function (newValue) {
+            filterItems(model.allItems(), model.selectedTrade(), newValue);            
+        });
+
+        model.selectedType.subscribe(function (newValue)
+        {
+            filterItems(model.allItems(), model.selectedTrade(), model.selectedSubCategory(), newValue);            
+        });
+
+        ko.applyBindings(model);
+    });
+</script></textarea>

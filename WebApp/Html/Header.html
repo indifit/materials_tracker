@@ -4,11 +4,10 @@
             <p class="navbar-brand">Materials Tracker</p>
         </div>
         <div class="collapse navbar-collapse">
-            <ul class="nav navbar-nav">
-                <li><a href="<?=ScriptApp.getService().getUrl();?>?pageHash=DGJTYF&projectHash=<?=data.projectHash;?>">Core List</a></li>
-            </ul>
-            <h4 class="navbar-text navbar-right">Project Number: <?=data.projectData.projectNumber?></h4>
-            <h4 class="navbar-text navbar-right">Project Name: <?=data.projectData.projectName?></h4>
+            <div class="navbar-right">
+                <h4 class="navbar-text">Project Number: <?=data.projectData.projectNumber?></h4>
+                <h4 class="navbar-text">Project Name: <?=data.projectData.projectName?></h4>
+            </div>
         </div>
     </div>
 </nav>

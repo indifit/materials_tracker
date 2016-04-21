@@ -1,14 +1,12 @@
-﻿var GoogleAppsScript;
+var GoogleAppsScript;
 (function (GoogleAppsScript) {
-    // ReSharper disable once InconsistentNaming
+    var HTML;
     (function (HTML) {
         var SandboxMode = (function () {
             function SandboxMode() {
             }
             return SandboxMode;
-        })();
+        }());
         HTML.SandboxMode = SandboxMode;
-    })(GoogleAppsScript.HTML || (GoogleAppsScript.HTML = {}));
-    var HTML = GoogleAppsScript.HTML;
+    })(HTML = GoogleAppsScript.HTML || (GoogleAppsScript.HTML = {}));
 })(GoogleAppsScript || (GoogleAppsScript = {}));
-//# sourceMappingURL=SandboxMode.js.map
