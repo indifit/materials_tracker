@@ -445,7 +445,19 @@
 
                                 if (matchingHeaders.length > 0) {
                                     //Set the value of the appropriate cell
-                                    materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(basketItem[prop]);
+                                    if (prop === 'usage') {
+                                        var userEmail = Session.getActiveUser().getEmail();
+                                        var val;
+                                        if (userEmail.trim() !== '') {
+                                            val = Session.getActiveUser().getEmail() + ' - ' + basketItem[prop];
+                                        } else {
+                                            val = basketItem[prop];
+                                        }
+
+                                        materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(val);
+                                    } else {
+                                        materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(basketItem[prop]);
+                                    }
                                 } else {
                                     if (prop === 'pdc') {
                                         materialsTrackingRange.getCell(firstEmptyRowNumber, 17).setValue(basketItem['pdc'].description);
