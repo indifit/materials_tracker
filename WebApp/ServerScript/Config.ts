@@ -2,7 +2,7 @@
 {
     export class ConfigurationManager
     {
-        static configSettingsSsid: string = '1lMwQsbonNGycRoA-Zelm151YU6S_fididqPyTXDJmVQ';
+        static configSettingsSsid: string = '1aHWYww4ErsnBVoxTDyjD-ZCadnW7sTaUZAt1S_n4DpQ';
 
         static projectNumberLookupSsidKey: string = 'ProjectNumberLookupSSID';        
 

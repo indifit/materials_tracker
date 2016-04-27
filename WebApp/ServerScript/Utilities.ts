@@ -473,7 +473,7 @@
         {
             var materialsTrackerSs: GoogleAppsScript.Spreadsheet.Spreadsheet = DataSaver.getMaterialsTrackerSs(projectDetails);            
 
-            var materialsTrackingSheet: GoogleAppsScript.Spreadsheet.Sheet = materialsTrackerSs.getSheetByName('Materials Tracking');
+            var materialsTrackingSheet: GoogleAppsScript.Spreadsheet.Sheet = materialsTrackerSs.getSheetByName('WebAppMaterials');
 
             var materialsTrackingRange: GoogleAppsScript.Spreadsheet.Range = materialsTrackingSheet.getRange(1, 1, materialsTrackingSheet.getLastRow(), materialsTrackingSheet.getLastColumn());
 

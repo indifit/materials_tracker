@@ -410,7 +410,7 @@
                 DataSaver.saveBasketData = function (projectDetails, basketItems) {
                     var materialsTrackerSs = DataSaver.getMaterialsTrackerSs(projectDetails);
 
-                    var materialsTrackingSheet = materialsTrackerSs.getSheetByName('Materials Tracking');
+                    var materialsTrackingSheet = materialsTrackerSs.getSheetByName('WebAppMaterials');
 
                     var materialsTrackingRange = materialsTrackingSheet.getRange(1, 1, materialsTrackingSheet.getLastRow(), materialsTrackingSheet.getLastColumn());
 
