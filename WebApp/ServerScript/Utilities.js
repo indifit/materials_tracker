@@ -447,14 +447,13 @@
                                     //Set the value of the appropriate cell
                                     if (prop === 'usage') {
                                         var userEmail = Session.getActiveUser().getEmail();
-                                        var val;
-                                        if (userEmail.trim() !== '') {
-                                            val = Session.getActiveUser().getEmail() + ' - ' + basketItem[prop];
-                                        } else {
-                                            val = basketItem[prop];
-                                        }
+                                        var val = basketItem[prop];
 
-                                        materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(val);
+                                        if (userEmail.trim() !== '') {
+                                            materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(val).setNote(userEmail);
+                                        } else {
+                                            materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(val);
+                                        }
                                     } else {
                                         materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(basketItem[prop]);
                                     }

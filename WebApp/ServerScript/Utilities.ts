@@ -520,17 +520,19 @@
                             if (prop === 'usage')
                             {
                                 var userEmail: string = Session.getActiveUser().getEmail();
-                                var val: string;
+                                var val: string = basketItem[prop];
+
                                 if (userEmail.trim() !== '')
                                 {
-                                    val = Session.getActiveUser().getEmail() + ' - ' + basketItem[prop];
+                                    materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(val).setNote(userEmail);
                                 } else
                                 {
-                                    val = basketItem[prop];
+                                    materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(val);
                                 }
                                 
-                                materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(val);
-                            } else
+                                
+                            }
+                            else
                             {
                                 materialsTrackingRange.getCell(firstEmptyRowNumber, matchingHeaders[0].materialsTrackerColNum).setValue(basketItem[prop]);    
                             }
